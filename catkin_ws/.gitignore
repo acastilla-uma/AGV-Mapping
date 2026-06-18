@@ -1,0 +1,34 @@
+# Catkin build outputs
+build/
+devel/
+install/
+logs/
+
+# Large local archives/backups
+src.zip
+*.tar.gz
+*.zip
+
+# Runtime data and generated maps
+*.pcd
+maps/
+agv_mapping/
+agv_mapping_test/
+datos/
+
+# ROS/editor/runtime noise
+.catkin_tools/
+.ros/
+*.bag
+*.log
+*.pyc
+__pycache__/
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Python bytecode variants
+*.pyc.*

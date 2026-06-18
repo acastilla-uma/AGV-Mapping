@@ -1,0 +1,50 @@
+Visualization Manager:
+  Class: ""
+  Displays:
+    - Alpha: 0.8
+      Color: 255; 255; 255
+      Class: rviz/PointCloud2
+      Enabled: true
+      Name: AccumulatedCloud
+      Topic: /pointcloud_accumulator/accumulated_cloud
+      Unreliable: false
+      Use Fixed Frame: true
+      Queue Size: 1
+      Size (Pixels): 3
+    - Class: rviz/Grid
+      Enabled: true
+      Name: Grid
+      Plane: XY
+      Plane Cell Count: 50
+      Reference Frame: odom
+      Value: true
+      Color: 160; 160; 160
+      Cell Size: 1
+  Enabled: true
+  Global Options:
+    Background Color: 48; 48; 48
+    Fixed Frame: odom
+    Frame Rate: 30
+  Name: root
+  Tools:
+    - Class: rviz/Interact
+    - Class: rviz/MoveCamera
+    - Class: rviz/Select
+    - Class: rviz/FocusCamera
+    - Class: rviz/Measure
+    - Class: rviz/SetInitialPose
+    - Class: rviz/SetGoal
+  Views:
+    Current:
+      Class: rviz/Orbit
+      Distance: 20
+      Focal Point: 0; 0; 0
+      Name: Current View
+      Pitch: 0.35
+      Target Frame: odom
+      Yaw: 0.78
+  Window Geometry:
+    Height: 900
+    Width: 1600
+    X: 50
+    Y: 50

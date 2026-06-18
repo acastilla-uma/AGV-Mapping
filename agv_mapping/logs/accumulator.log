@@ -1,0 +1,107 @@
+QObject::connect: Cannot queue arguments of type 'QVector<int>'
+(Make sure 'QVector<int>' is registered using qRegisterMetaType().)
+QObject::connect: Cannot queue arguments of type 'QVector<int>'
+(Make sure 'QVector<int>' is registered using qRegisterMetaType().)
+[33m[ WARN] [1781696950.796962232]: RealSense camera frame did not produce valid RGB points.[0m
+[0m[ INFO] [1781696943.046008574]: PCD save sources: LiDAR=true Camera=true[0m
+[0m[ INFO] [1781696943.069980787]: LiDAR accumulation enabled: /registered_cloud[0m
+[0m[ INFO] [1781696943.085806586]: RealSense RGB cloud from aligned depth enabled: depth=/camera/aligned_depth_to_color/image_raw image=/camera/color/image_raw info=/camera/color/camera_info[0m
+[0m[ INFO] [1781696943.111305715]: RealSense colorization enabled: image=/camera/color/image_raw info=/camera/color/camera_info[0m
+[0m[ INFO] [1781696943.111404120]: RealSense accumulation rate 1.00 Hz, visualization rate 5.00 Hz, accumulated voxel 0.050 m, instant voxel 0.020 m, range 0.20-5.00 m[0m
+[0m[ INFO] [1781696950.796707084]: Built RGB camera cloud from aligned depth with 0 points before voxel filtering.[0m
+[0m[ INFO] [1781696955.924883227]: Built RGB camera cloud from aligned depth with 72731 points before voxel filtering.[0m
+[0m[ INFO] [1781696960.930207551]: Built RGB camera cloud from aligned depth with 72566 points before voxel filtering.[0m
+[0m[ INFO] [1781696965.945976126]: Built RGB camera cloud from aligned depth with 72379 points before voxel filtering.[0m
+[0m[ INFO] [1781696970.953793307]: Built RGB camera cloud from aligned depth with 73032 points before voxel filtering.[0m
+[0m[ INFO] [1781696975.961738339]: Built RGB camera cloud from aligned depth with 72852 points before voxel filtering.[0m
+[0m[ INFO] [1781696980.979526952]: Built RGB camera cloud from aligned depth with 72752 points before voxel filtering.[0m
+[0m[ INFO] [1781696985.985590628]: Built RGB camera cloud from aligned depth with 72799 points before voxel filtering.[0m
+[0m[ INFO] [1781696990.996549183]: Built RGB camera cloud from aligned depth with 72103 points before voxel filtering.[0m
+[0m[ INFO] [1781696996.017265910]: Built RGB camera cloud from aligned depth with 73158 points before voxel filtering.[0m
+[0m[ INFO] [1781697001.021611408]: Built RGB camera cloud from aligned depth with 73107 points before voxel filtering.[0m
+[0m[ INFO] [1781697006.034449356]: Built RGB camera cloud from aligned depth with 73065 points before voxel filtering.[0m
+[0m[ INFO] [1781697011.052411091]: Built RGB camera cloud from aligned depth with 73877 points before voxel filtering.[0m
+[0m[ INFO] [1781697016.385038487]: Built RGB camera cloud from aligned depth with 69962 points before voxel filtering.[0m
+[0m[ INFO] [1781697021.405238314]: Built RGB camera cloud from aligned depth with 76788 points before voxel filtering.[0m
+[0m[ INFO] [1781697026.424457654]: Built RGB camera cloud from aligned depth with 76800 points before voxel filtering.[0m
+[0m[ INFO] [1781697031.434194682]: Built RGB camera cloud from aligned depth with 76799 points before voxel filtering.[0m
+[0m[ INFO] [1781697036.435977182]: Built RGB camera cloud from aligned depth with 76799 points before voxel filtering.[0m
+[0m[ INFO] [1781697041.441386440]: Built RGB camera cloud from aligned depth with 76799 points before voxel filtering.[0m
+[0m[ INFO] [1781697046.457394450]: Built RGB camera cloud from aligned depth with 76798 points before voxel filtering.[0m
+[0m[ INFO] [1781697051.466238462]: Built RGB camera cloud from aligned depth with 76799 points before voxel filtering.[0m
+[0m[ INFO] [1781697056.477675330]: Built RGB camera cloud from aligned depth with 76799 points before voxel filtering.[0m
+[0m[ INFO] [1781697061.505779383]: Built RGB camera cloud from aligned depth with 76797 points before voxel filtering.[0m
+[0m[ INFO] [1781697066.840233845]: Built RGB camera cloud from aligned depth with 76798 points before voxel filtering.[0m
+[0m[ INFO] [1781697071.850476239]: Built RGB camera cloud from aligned depth with 76800 points before voxel filtering.[0m
+[0m[ INFO] [1781697076.855894003]: Built RGB camera cloud from aligned depth with 76799 points before voxel filtering.[0m
+[0m[ INFO] [1781697081.865150247]: Built RGB camera cloud from aligned depth with 76797 points before voxel filtering.[0m
+[0m[ INFO] [1781697086.877668946]: Built RGB camera cloud from aligned depth with [0m[ INFO] [1781696943.003281407]: rviz version 1.13.30[0m
+[0m[ INFO] [1781696943.003423366]: compiled against Qt version 5.9.5[0m
+[0m[ INFO] [1781696943.003493865]: compiled against OGRE version 1.9.0 (Ghadamon)[0m
+[0m[ INFO] [1781696943.041791137]: Forcing OpenGl version 0.[0m
+[0m[ INFO] [1781696943.974071572]: Stereo is NOT SUPPORTED[0m
+[0m[ INFO] [1781696943.974230779]: OpenGL device: NVIDIA Tegra Xavier (nvgpu)/integrated[0m
+[0m[ INFO] [1781696943.974310847]: OpenGl version: 4.6 (GLSL 4.6).[0m
+76799 points before voxel filtering.[0m
+[0m[ INFO] [1781697091.890328422]: Built RGB camera cloud from aligned depth with 76799 points before voxel filtering.[0m
+[0m[ INFO] [1781697096.900646388]: Built RGB camera cloud from aligned depth with 76800 points before voxel filtering.[0m
+[0m[ INFO] [1781697101.925285705]: Built RGB camera cloud from aligned depth with 76798 points before voxel filtering.[0m
+[0m[ INFO] [1781697103.833379746]: Saved LiDAR-only cloud to /mnt/ros/maps/map_20260617_194852_lidar.pcd[0m
+[0m[ INFO] [1781697103.838134200]: Saved RGB camera-only cloud to /mnt/ros/maps/map_20260617_194852_camera.pcd[0m
+[0m[ INFO] [1781697103.858126938]: Saved fused LiDAR+RGB camera cloud to /mnt/ros/maps/map_20260617_194852_fused.pcd[0m
+... logging to /home/agilex/.ros/log/83c16ca4-6a42-11f1-aa8a-48b02d3c846d/roslaunch-xavier-15915.log
+Checking log directory for disk usage. This may take a while.
+Press Ctrl-C to interrupt
+Done checking log file disk usage. Usage is <1GB.
+]2;/mnt/ros/catkin_ws/src/scout_pointcloud_accumulator/launch/accumulate.launch
+[1mstarted roslaunch server http://xavier:42199/[0m
+
+SUMMARY
+========
+
+PARAMETERS
+ * /accumulator_node/camera_accumulate_rate: 1.0
+ * /accumulator_node/camera_color_topic: /camera/color/ima...
+ * /accumulator_node/camera_depth_pixel_step: 2
+ * /accumulator_node/camera_depth_topic: /camera/aligned_d...
+ * /accumulator_node/camera_info_topic: /camera/color/cam...
+ * /accumulator_node/camera_intensity: 0.0
+ * /accumulator_node/camera_max_range: 5.0
+ * /accumulator_node/camera_min_range: 0.2
+ * /accumulator_node/camera_topic: /camera/depth/col...
+ * /accumulator_node/camera_visualization_rate: 5.0
+ * /accumulator_node/camera_visualization_voxel_size: 0.02
+ * /accumulator_node/camera_voxel_size: 0.05
+ * /accumulator_node/enable_camera: True
+ * /accumulator_node/enable_camera_color: True
+ * /accumulator_node/enable_lidar: True
+ * /accumulator_node/lidar_topic: /registered_cloud
+ * /accumulator_node/lidar_voxel_size: 0.05
+ * /accumulator_node/output_pcd: /mnt/ros/maps/map...
+ * /accumulator_node/save_camera: True
+ * /accumulator_node/save_lidar: True
+ * /accumulator_node/target_frame: map
+ * /accumulator_node/transform_timeout: 0.5
+ * /accumulator_node/use_aligned_depth_for_camera: True
+ * /accumulator_node/use_latest_tf_on_failure: False
+ * /accumulator_node/voxel_size: 0.05
+ * /rosdistro: melodic
+ * /rosversion: 1.14.13
+
+NODES
+  /
+    accumulator_node (scout_pointcloud_accumulator/accumulator_node)
+    base_link_to_realsense (scout_pointcloud_accumulator/static_transform_rpy.py)
+    rviz (rviz/rviz)
+
+[1mROS_MASTER_URI=http://localhost:11311[0m
+]2;/mnt/ros/catkin_ws/src/scout_pointcloud_accumulator/launch/accumulate.launch http://localhost:11311
+[1mprocess[base_link_to_realsense-1]: started with pid [16049][0m
+[1mprocess[accumulator_node-2]: started with pid [16050][0m
+[1mprocess[rviz-3]: started with pid [16051][0m
+[rviz-3] killing on exit
+[accumulator_node-2] killing on exit
+[base_link_to_realsense-1] killing on exit
+shutting down processing monitor...
+... shutting down processing monitor complete
+[1mdone[0m

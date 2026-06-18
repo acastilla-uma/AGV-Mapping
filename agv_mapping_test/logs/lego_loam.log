@@ -1,0 +1,17 @@
+[ WARN] [1780494908.342875304]: Shutdown request received.
+[ WARN] [1780494908.348013851]: Shutdown request received.
+[ WARN] [1780494908.357866112]: Reason given for shutdown: [[/camera_init_to_map] Reason: new node registered with same name]
+[ WARN] [1780494908.360791306]: Reason given for shutdown: [[/base_link_to_camera] Reason: new node registered with same name]
+[ WARN] [1780494908.420394183]: Shutdown request received.
+[ WARN] [1780494908.420577704]: Reason given for shutdown: [[/transformFusion] Reason: new node registered with same name]
+[ WARN] [1780494908.521792896]: Shutdown request received.
+[ WARN] [1780494908.586102894]: Reason given for shutdown: [[/featureAssociation] Reason: new node registered with same name]
+[ WARN] [1780494908.615997277]: Shutdown request received.
+[ WARN] [1780494908.616185086]: Reason given for shutdown: [[/imageProjection] Reason: new node registered with same name]
+[ WARN] [1780494908.661542310]: Shutdown request received.
+[ WARN] [1780494908.677928355]: Reason given for shutdown: [[/mapOptmization] Reason: new node registered with same name]
+[ INFO] [1780494301.084638991]: [1;32m---->[0m Transform Fusion Started.
+[ INFO] [1780494301.268564410]: [1;32m---->[0m Feature Association Started.
+[ INFO] [1780494301.614146878]: [1;32m---->[0m Image Projection Started.
+terminate called after throwing an instance of 'pcl::IOException'
+  what():  : [pcl::PCDWriter::writeASCII] Input point cloud has no data!

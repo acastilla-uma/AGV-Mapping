@@ -1,0 +1,21 @@
+name: Cpp
+
+on:
+  push:
+    branches: [ master, v2.x ]
+  pull_request:
+    branches: [ master, v2.x ]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-18.04
+
+    steps:
+    - uses: actions/checkout@v2
+    # - name: Install dependencies
+    #   run: sudo apt-get install -y build-essential cmake libasio-dev
+    - name: Update git submodule
+      run: git submodule update --init --recursive
+    - name: Build and pack
+      run: mkdir build && cd build && cmake -DBUILD_TESTS=ON .. && cmake --build . && cpack    

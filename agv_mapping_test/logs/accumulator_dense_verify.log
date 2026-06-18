@@ -1,0 +1,8 @@
+[ WARN] [1780482775.178431762]: Shutdown request received.
+[ WARN] [1780482775.178636732]: Reason given for shutdown: [user request]
+[ INFO] [1780482567.313944254]: PCD save sources: LiDAR=true Camera=true
+[ INFO] [1780482567.330568104]: LiDAR accumulation enabled: /registered_cloud
+[ INFO] [1780482567.342170173]: RealSense RGB cloud from aligned depth enabled: depth=/camera/aligned_depth_to_color/image_raw image=/camera/color/image_raw info=/camera/color/camera_info
+[ INFO] [1780482567.363668884]: RealSense colorization enabled: image=/camera/color/image_raw info=/camera/color/camera_info
+[ INFO] [1780482567.363747064]: RealSense accumulation rate 1.00 Hz, visualization rate 5.00 Hz, accumulated voxel 0.050 m, instant voxel 0.020 m, range 0.20-5.00 m
+shutdown request: user request

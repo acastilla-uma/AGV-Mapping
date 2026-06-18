@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<launch>
+  <arg name="input_topic" default="/velodyne_points"/>
+  <arg name="global_frame" default="odom"/>
+  <arg name="output_pcd" default="/home/agilex/Documents/PhDAlex/mapa_vlp16_acumulado.pcd"/>
+  <arg name="voxel_leaf_size" default="0.08"/>
+
+  <include file="$(find scout_bringup)/launch/open_rslidar.launch" />
+
+  <node pkg="lidar_mapper_simple" type="pointcloud_accumulator_node" name="pointcloud_accumulator" output="screen">
+    <param name="input_topic" value="$(arg input_topic)"/>
+    <param name="global_frame" value="$(arg global_frame)"/>
+    <param name="output_pcd" value="$(arg output_pcd)"/>
+    <param name="voxel_leaf_size" value="$(arg voxel_leaf_size)"/>
+  </node>
+
+  <node pkg="rviz" type="rviz" name="pointcloud_mapping_rviz" output="screen"
+        args="-d $(find scout_bringup)/rviz/pointcloud_mapping.rviz"/>
+</launch>

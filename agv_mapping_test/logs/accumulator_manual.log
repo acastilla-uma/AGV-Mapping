@@ -1,0 +1,41 @@
+[ WARN] [1780482021.454548304]: RealSense transform failed: Could not find a connection between 'map' and 'camera_color_optical_frame' because they are not part of the same tree.Tf has two or more unconnected trees.
+[ INFO] [1780482020.620886493]: PCD save sources: LiDAR=true Camera=true
+[ INFO] [1780482020.637783019]: LiDAR accumulation enabled: /registered_cloud
+[ INFO] [1780482020.646528388]: RealSense RGB cloud from aligned depth enabled: depth=/camera/aligned_depth_to_color/image_raw image=/camera/color/image_raw info=/camera/color/camera_info
+[ INFO] [1780482020.669136411]: RealSense colorization enabled: image=/camera/color/image_raw info=/camera/color/camera_info
+[ INFO] [1780482020.669198719]: RealSense accumulation rate 1.00 Hz, visualization rate 5.00 Hz, voxel 0.080 m, range 0.20-5.00 m
+[ INFO] [1780482020.943953663]: Built RGB camera cloud from aligned depth with 73484 points before voxel filtering.
+[ INFO] [1780482026.121693450]: Built RGB camera cloud from aligned depth with 73757 points before voxel filtering.
+[ INFO] [1780482031.129611140]: Built RGB camera cloud from aligned depth with 73625 points before voxel filtering.
+[ INFO] [1780482036.140107588]: Built RGB camera cloud from aligned depth with 73743 points before voxel filtering.
+[ INFO] [1780482041.161103379]: Built RGB camera cloud from aligned depth with 73770 points before voxel filtering.
+[ INFO] [1780482046.168907982]: Built RGB camera cloud from aligned depth with 73685 points before voxel filtering.
+[ INFO] [1780482051.174663129]: Built RGB camera cloud from aligned depth with 73905 points before voxel filtering.
+[ INFO] [1780482056.186088370]: Built RGB camera cloud from aligned depth with 73891 points before voxel filtering.
+[ INFO] [1780482061.199762329]: Built RGB camera cloud from aligned depth with 73863 points before voxel filtering.
+[ INFO] [1780482066.208673481]: Built RGB camera cloud from aligned depth with 73998 points before voxel filtering.
+[ INFO] [1780482071.216718150]: Built RGB camera cloud from aligned depth with 73722 points before voxel filtering.
+[ INFO] [1780482076.231674762]: Built RGB camera cloud from aligned depth with 73691 points before voxel filtering.
+[ INFO] [1780482081.242539152]: Built RGB camera cloud from aligned depth with 74082 points before voxel filtering.
+[ INFO] [1780482086.272186177]: Built RGB camera cloud from aligned depth with 73946 points before voxel filtering.
+[ INFO] [1780482091.597760443]: Built RGB camera cloud from aligned depth with 73958 points before voxel filtering.
+[ INFO] [1780482096.632962916]: Built RGB camera cloud from aligned depth with 73399 points before voxel filtering.
+[ INFO] [1780482101.956320045]: Built RGB camera cloud from aligned depth with 55611 points before voxel filtering.
+[ INFO] [1780482106.968188096]: Built RGB camera cloud from aligned depth with 61543 points before voxel filtering.
+[ INFO] [1780482111.979573923]: Built RGB camera cloud from aligned depth with 75631 points before voxel filtering.
+[ INFO] [1780482116.984325160]: Built RGB camera cloud from aligned depth with 63655 points before voxel filtering.
+[ INFO] [1780482121.995830329]: Built RGB camera cloud from aligned depth with 70910 points before voxel filtering.
+[ INFO] [1780482127.006419572]: Built RGB camera cloud from aligned depth with 74648 points before voxel filtering.
+[ INFO] [1780482132.017561261]: Built RGB camera cloud from aligned depth with 59838 points before voxel filtering.
+[ INFO] [1780482137.027438183]: Built RGB camera cloud from aligned depth with 71703 points before voxel filtering.
+[ INFO] [1780482142.041006935]: Built RGB camera cloud from aligned depth with 56738 points before voxel filtering.
+[ INFO] [1780482147.054568183]: Built RGB camera cloud from aligned depth with 69498 points before voxel filtering.
+[ INFO] [1780482152.061146895]: Built RGB camera cloud from aligned depth with 64938 points before voxel filtering.
+[ INFO] [1780482157.082673746]: Built RGB camera cloud from aligned depth with 59180 points before voxel filtering.
+[ INFO] [1780482162.411603733]: Built RGB camera cloud from aligned depth with 64638 points before voxel filtering.
+[ INFO] [1780482167.437721138]: Built RGB camera cloud from aligned depth with 71679 points before voxel filtering.
+[ INFO] [1780482172.44[ WARN] [1780482311.382253941]: Shutdown request received.
+[ WARN] [1780482311.382424062]: Reason given for shutdown: [user request]
+terminate called after throwing an instance of 'pcl::IOException'
+  what():  : [pcl::PCDWriter::writeBinary] Error during open!
+shutdown request: user request

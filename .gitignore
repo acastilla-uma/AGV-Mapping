@@ -1,0 +1,9 @@
+.Trash-1000/
+.omx/
+git_metadata_backup_*/
+lost+found/
+catkin_ws/build/
+catkin_ws/devel/
+catkin_ws/logs/
+catkin_ws/src.zip
+catkin_ws/src/realsense.tar.gz

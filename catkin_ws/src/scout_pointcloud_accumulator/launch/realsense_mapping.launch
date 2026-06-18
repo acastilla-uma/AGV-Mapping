@@ -1,0 +1,43 @@
+<launch>
+  <arg name="camera" default="camera" />
+  <arg name="serial_no" default="" />
+  <arg name="usb_port_id" default="" />
+  <arg name="device_type" default="" />
+  <arg name="depth_width" default="640" />
+  <arg name="depth_height" default="480" />
+  <arg name="color_width" default="640" />
+  <arg name="color_height" default="480" />
+  <arg name="depth_fps" default="6" />
+  <arg name="color_fps" default="6" />
+  <arg name="filters" default="" />
+  <arg name="clip_distance" default="-1" />
+  <arg name="pointcloud_texture_stream" default="RS2_STREAM_COLOR" />
+  <arg name="pointcloud_texture_index" default="0" />
+  <arg name="allow_no_texture_points" default="false" />
+  <arg name="initial_reset" default="true" />
+
+  <include file="$(find realsense2_camera)/launch/rs_camera.launch">
+    <arg name="camera" value="$(arg camera)" />
+    <arg name="serial_no" value="$(arg serial_no)" />
+    <arg name="usb_port_id" value="$(arg usb_port_id)" />
+    <arg name="device_type" value="$(arg device_type)" />
+    <arg name="enable_depth" value="true" />
+    <arg name="enable_color" value="true" />
+    <arg name="enable_pointcloud" value="false" />
+    <arg name="pointcloud_texture_stream" value="$(arg pointcloud_texture_stream)" />
+    <arg name="pointcloud_texture_index" value="$(arg pointcloud_texture_index)" />
+    <arg name="allow_no_texture_points" value="$(arg allow_no_texture_points)" />
+    <arg name="align_depth" value="true" />
+    <arg name="enable_sync" value="false" />
+    <arg name="ordered_pc" value="false" />
+    <arg name="depth_width" value="$(arg depth_width)" />
+    <arg name="depth_height" value="$(arg depth_height)" />
+    <arg name="color_width" value="$(arg color_width)" />
+    <arg name="color_height" value="$(arg color_height)" />
+    <arg name="depth_fps" value="$(arg depth_fps)" />
+    <arg name="color_fps" value="$(arg color_fps)" />
+    <arg name="filters" value="$(arg filters)" />
+    <arg name="clip_distance" value="$(arg clip_distance)" />
+    <arg name="initial_reset" value="$(arg initial_reset)" />
+  </include>
+</launch>

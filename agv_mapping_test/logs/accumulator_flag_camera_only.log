@@ -1,0 +1,68 @@
+[ WARN] [1780494632.589315037]: RealSense transform failed: Could not find a connection between 'map' and 'camera_color_optical_frame' because they are not part of the same tree.Tf has two or more unconnected trees.
+[ WARN] [1780494641.003207424]: Shutdown request received.
+[ WARN] [1780494641.003387329]: Reason given for shutdown: [user request]
+[ INFO] [1780494631.668920392]: PCD save sources: LiDAR=false Camera=true
+[ INFO] [1780494631.680804980]: LiDAR accumulation enabled: /registered_cloud
+[ INFO] [1780494631.692373471]: RealSense RGB cloud from aligned depth enabled: depth=/camera/aligned_depth_to_color/image_raw image=/camera/color/image_raw info=/camera/color/camera_info
+[ INFO] [1780494631.717860861]: RealSense colorization enabled: image=/camera/color/image_raw info=/camera/color/camera_info
+[ INFO] [1780494631.717934942]: RealSense accumulation rate 1.00 Hz, visualization rate 5.00 Hz, accumulated voxel 0.050 m, instant voxel 0.020 m, range 0.20-5.00 m
+[ INFO] [1780494632.058277996]: Built RGB camera cloud from aligned depth with 74824 points before voxel filtering.
+[ INFO] [1780494637.239072249]: Built RGB camera cloud from aligned depth with 74315 points before voxel filtering.
+[ INFO] [1780494640.178960304]: LiDAR-only save disabled; not saving /mnt/ros/maps/test_rgb_camera/flags/flag_camera_only_lidar.pcd
+[ INFO] [1780494640.181281944]: Saved RGB camera-only cloud to /mnt/ros/maps/test_rgb_camera/flags/flag_camera_only_camera.pcd
+[ INFO] [1780494640.181429369]: Fused save disabled because LiDAR=false Camera=true; not saving /mnt/ros/maps/test_rgb_camera/flags/flag_camera_only_fused.pcd
+shutdown request: user request
+... logging to /home/agilex/.ros/log/6914b262-5f52-11f1-a934-48b02d3c846d/roslaunch-xavier-16326.log
+Checking log directory for disk usage. This may take a while.
+Press Ctrl-C to interrupt
+Done checking log file disk usage. Usage is <1GB.
+]2;/mnt/ros/catkin_ws/src/scout_pointcloud_accumulator/launch/accumulate.launch
+[1mstarted roslaunch server http://xavier:43537/[0m
+
+SUMMARY
+========
+
+PARAMETERS
+ * /accumulator_node/camera_accumulate_rate: 1.0
+ * /accumulator_node/camera_color_topic: /camera/color/ima...
+ * /accumulator_node/camera_depth_pixel_step: 2
+ * /accumulator_node/camera_depth_topic: /camera/aligned_d...
+ * /accumulator_node/camera_info_topic: /camera/color/cam...
+ * /accumulator_node/camera_intensity: 0.0
+ * /accumulator_node/camera_max_range: 5.0
+ * /accumulator_node/camera_min_range: 0.2
+ * /accumulator_node/camera_topic: /camera/depth/col...
+ * /accumulator_node/camera_visualization_rate: 5.0
+ * /accumulator_node/camera_visualization_voxel_size: 0.02
+ * /accumulator_node/camera_voxel_size: 0.05
+ * /accumulator_node/enable_camera: True
+ * /accumulator_node/enable_camera_color: True
+ * /accumulator_node/enable_lidar: True
+ * /accumulator_node/lidar_topic: /registered_cloud
+ * /accumulator_node/lidar_voxel_size: 0.05
+ * /accumulator_node/output_pcd: /mnt/ros/maps/tes...
+ * /accumulator_node/save_camera: True
+ * /accumulator_node/save_lidar: False
+ * /accumulator_node/target_frame: map
+ * /accumulator_node/use_aligned_depth_for_camera: True
+ * /accumulator_node/voxel_size: 0.05
+ * /rosdistro: melodic
+ * /rosversion: 1.14.13
+
+NODES
+  /
+    accumulator_node (scout_pointcloud_accumulator/accumulator_node)
+    base_link_to_realsense (scout_pointcloud_accumulator/static_transform_rpy.py)
+
+[1mROS_MASTER_URI=http://localhost:11311[0m
+]2;/mnt/ros/catkin_ws/src/scout_pointcloud_accumulator/launch/accumulate.launch http://localhost:11311
+[1mprocess[base_link_to_realsense-1]: started with pid [16343][0m
+[1mprocess[accumulator_node-2]: started with pid [16344][0m
+[1m[accumulator_node-2] process has finished cleanly
+log file: /home/agilex/.ros/log/6914b262-5f52-11f1-a934-48b02d3c846d/accumulator_node-2*.log[0m
+[1m[base_link_to_realsense-1] process has finished cleanly
+log file: /home/agilex/.ros/log/6914b262-5f52-11f1-a934-48b02d3c846d/base_link_to_realsense-1*.log[0m
+all processes on machine have died, roslaunch will exit
+shutting down processing monitor...
+... shutting down processing monitor complete
+[1mdone[0m

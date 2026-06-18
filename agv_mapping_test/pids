@@ -1,0 +1,4 @@
+10891 lidar /mnt/ros/agv_mapping_test/logs/lidar.log
+10945 realsense /mnt/ros/agv_mapping_test/logs/realsense.log
+11037 lego_loam /mnt/ros/agv_mapping_test/logs/lego_loam.log
+12031 accumulator /mnt/ros/agv_mapping_test/logs/accumulator.log

@@ -1,0 +1,72 @@
+<launch>
+  <!-- This launch does NOT start sensor drivers. Start LiDAR/RealSense first or use scripts/start_lidar_mapping.sh. -->
+
+  <arg name="input_topic" default="/registered_cloud" />
+  <arg name="lidar_topic" default="$(arg input_topic)" />
+  <arg name="camera_topic" default="/camera/depth/color/points" />
+  <arg name="camera_depth_topic" default="/camera/aligned_depth_to_color/image_raw" />
+  <arg name="use_aligned_depth_for_camera" default="true" />
+  <arg name="camera_color_topic" default="/camera/color/image_raw" />
+  <arg name="camera_info_topic" default="/camera/color/camera_info" />
+  <arg name="enable_camera_color" default="true" />
+  <arg name="enable_lidar" default="true" />
+  <arg name="enable_camera" default="false" />
+  <arg name="target_frame" default="map" />
+  <arg name="voxel_size" default="0.05" />
+  <arg name="lidar_voxel_size" default="0.05" />
+  <arg name="camera_voxel_size" default="0.05" />
+  <arg name="camera_visualization_voxel_size" default="0.02" />
+  <arg name="camera_accumulate_rate" default="1.0" />
+  <arg name="camera_visualization_rate" default="5.0" />
+  <arg name="camera_min_range" default="0.20" />
+  <arg name="camera_max_range" default="5.0" />
+  <arg name="camera_depth_pixel_step" default="2" />
+  <arg name="camera_intensity" default="0.0" />
+  <arg name="transform_timeout" default="0.5" />
+  <arg name="use_latest_tf_on_failure" default="false" />
+  <arg name="output_pcd" default="/tmp/accumulated_cloud.pcd" />
+  <arg name="save_lidar" default="true" />
+  <arg name="save_camera" default="true" />
+  <arg name="rviz" default="true" />
+
+  <arg name="publish_camera_tf" default="$(arg enable_camera)" />
+  <arg name="camera_parent_frame" default="base_link" />
+  <arg name="camera_child_frame" default="camera_link" />
+  <arg name="camera_xyz" default="0 0 0" />
+  <arg name="camera_rpy" default="0 0 0" />
+
+  <node if="$(arg publish_camera_tf)" pkg="scout_pointcloud_accumulator" type="static_transform_rpy.py"
+        name="base_link_to_realsense"
+        args="$(arg camera_xyz) $(arg camera_rpy) $(arg camera_parent_frame) $(arg camera_child_frame)"
+        output="screen" />
+
+  <node pkg="scout_pointcloud_accumulator" type="accumulator_node" name="accumulator_node" output="screen">
+    <param name="lidar_topic" value="$(arg lidar_topic)" />
+    <param name="camera_topic" value="$(arg camera_topic)" />
+    <param name="camera_depth_topic" value="$(arg camera_depth_topic)" />
+    <param name="use_aligned_depth_for_camera" value="$(arg use_aligned_depth_for_camera)" />
+    <param name="camera_color_topic" value="$(arg camera_color_topic)" />
+    <param name="camera_info_topic" value="$(arg camera_info_topic)" />
+    <param name="enable_camera_color" value="$(arg enable_camera_color)" />
+    <param name="enable_lidar" value="$(arg enable_lidar)" />
+    <param name="enable_camera" value="$(arg enable_camera)" />
+    <param name="target_frame" value="$(arg target_frame)" />
+    <param name="voxel_size" value="$(arg voxel_size)" />
+    <param name="lidar_voxel_size" value="$(arg lidar_voxel_size)" />
+    <param name="camera_voxel_size" value="$(arg camera_voxel_size)" />
+    <param name="camera_visualization_voxel_size" value="$(arg camera_visualization_voxel_size)" />
+    <param name="camera_accumulate_rate" value="$(arg camera_accumulate_rate)" />
+    <param name="camera_visualization_rate" value="$(arg camera_visualization_rate)" />
+    <param name="camera_min_range" value="$(arg camera_min_range)" />
+    <param name="camera_max_range" value="$(arg camera_max_range)" />
+    <param name="camera_depth_pixel_step" value="$(arg camera_depth_pixel_step)" />
+    <param name="camera_intensity" value="$(arg camera_intensity)" />
+    <param name="transform_timeout" value="$(arg transform_timeout)" />
+    <param name="use_latest_tf_on_failure" value="$(arg use_latest_tf_on_failure)" />
+    <param name="output_pcd" value="$(arg output_pcd)" />
+    <param name="save_lidar" value="$(arg save_lidar)" />
+    <param name="save_camera" value="$(arg save_camera)" />
+  </node>
+
+  <node if="$(arg rviz)" pkg="rviz" type="rviz" name="rviz" args="-d $(find scout_pointcloud_accumulator)/rviz/accum.rviz" output="screen"/>
+</launch>

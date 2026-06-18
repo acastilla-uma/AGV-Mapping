@@ -1,0 +1,65 @@
+[ WARN] [1780494659.437502988]: Aligned depth is ready but color image/camera_info are not ready.
+[ WARN] [1780494659.437782733]: RealSense camera frame did not produce valid RGB points.
+[ WARN] [1780494660.139475895]: RealSense transform failed: Could not find a connection between 'map' and 'camera_color_optical_frame' because they are not part of the same tree.Tf has two or more unconnected trees.
+[ INFO] [1780494659.145254672]: PCD save sources: LiDAR=true Camera=true
+[ INFO] [1780494659.159310436]: LiDAR accumulation enabled: /registered_cloud
+[ INFO] [1780494659.168562311]: RealSense RGB cloud from aligned depth enabled: depth=/camera/aligned_depth_to_color/image_raw image=/camera/color/image_raw info=/camera/color/camera_info
+[ INFO] [1780494659.191148922]: RealSense colorization enabled: image=/camera/color/image_raw info=/camera/color/camera_info
+[ INFO] [1780494659.191223739]: RealSense accumulation rate 1.00 Hz, visualization rate 5.00 Hz, accumulated voxel 0.050 m, instant voxel 0.020 m, range 0.20-5.00 m
+[ INFO] [1780494659.611035664]: Built RGB camera cloud from aligned depth with 74253 points before voxel filtering.
+[ INFO] [1780494664.792118142]: Built RGB camera cloud from aligned depth with 73959 points before voxel filtering.
+[ INFO] [1780494669.803282390]: Built RGB camera cloud from aligned depth with 73773 points before voxel filtering.
+[ INFO] [1780494674.825778840]: Built RGB camera cloud from aligned depth with 74126 points before voxel filtering.
+[ INFO] [1780494680.161625028]: Built RGB camera cloud from aligned depth with 74152 points before voxel filtering.
+[ INFO] [1780494683.798412915]: Saved LiDAR-only cloud to /mnt/ros/maps/test_rgb_camera/map_20260603_214454_lidar.pcd
+[ INFO] [1780494683.800487994]: Saved RGB camera-only cloud to /mnt/ros/maps/test_rgb_camera/map_20260603_214454_camera.pcd
+[ INFO] [1780494683.806580657]: Saved fused LiDAR+RGB camera cloud to /mnt/ros/maps/test_rgb_camera/map_20260603_214454_fused.pcd
+[ INFO] [1780494685.173409630]: Built RGB camera cloud from aligned depth with 74440 points before voxel filtering.
+[ INFO] [1780494690.178916161]: Built RGB camera cloud from aligned depth with 74765 points before voxel filtering.
+[ INFO] [1780494695.192269409]: Built RGB camera cloud from aligned depth with 73946 points before voxel filtering.
+[ INFO] [1780494700.212364154]: Built RGB camera cloud from aligned depth with 73914 points before voxel filtering.
+[ INFO] [1780494705.554772542]: Built RGB camera cloud from aligned depth with 74145 points before voxel filtering.
+[ INFO] [1780494710.569295235]: Built RGB camera cloud from aligned depth with 74265 points before voxel filtering.
+[ INFO] [1780494715.569677875]: Built RGB camera cloud from aligned depth with 73933 points before voxel filtering.
+[ INFO] [1780494720.601628472]: Built RGB camera cloud from aligned depth with 74413 points before voxel filtering.
+[ INFO] [1780494725.924661044]: Built RGB camera cloud from aligned depth with 73993 points before voxel filtering.
+[ INFO] [1780494730.943471657]: Built RGB camera cloud from aligned depth with 74067 points before voxel filtering.
+[ INFO] [1780494735.948728555]: Built RGB camera cloud from aligned depth with 74289 points before voxel filtering.
+[ INFO] [1780494740.957769019]: Built RGB camera cloud from aligned depth with 74233 points before voxel filtering.
+[ INFO] [1780494745.976570351]: Built RGB camera cloud from aligned depth with 74131 points before voxel filtering.
+[ INFO] [1780494751.297158946]: Built RGB camera cloud from aligned depth with 64093 points before voxel filtering.
+[ INFO] [1780494756.323683635]: Built RGB camera cloud from aligned depth with 73988 points before voxel filtering.
+[ INFO] [1780494761.341853893]: Built RGB camera cloud from aligned depth with 74335 points before voxel filtering.
+[ INFO] [1780494766.674698630]: Built RGB camera cloud from aligned depth with 74670 points before voxel filtering.
+[ INFO] [1780494771.695136065]: Built RGB camera cloud from aligned depth with 74518 points before voxel filtering.
+[ INFO] [1780494776.710462824]: Built RGB camera cloud from aligned depth with 74638 points before voxel filtering.
+[ INFO] [1780494781.723537767]: Built RGB camera cloud from aligned depth with 74426 points before voxel filtering.
+[ INFO] [1780494787.071147167]: Built RGB camera cloud from aligned depth with 73151 points before voxel filtering.
+[ INFO] [1780494792.075356573]: Built RGB camera cloud from aligned depth with [ WARN] [1780494905.557847152]: RealSense transform failed: Lookup would require extrapolation into the future.  Requested time 1780494904.678911924 but the latest data is at time 1780494904.416726112, when looking up transform from frame [camera_color_optical_frame] to frame [map]
+[ WARN] [1780494910.787904115]: Shutdown request received.
+[ WARN] [1780494910.788063412]: Reason given for shutdown: [[/accumulator_node] Reason: new node registered with same name]
+74216 points before voxel filtering.
+[ INFO] [1780494797.082522182]: Built RGB camera cloud from aligned depth with 74245 points before voxel filtering.
+[ INFO] [1780494802.093607902]: Built RGB camera cloud from aligned depth with 73910 points before voxel filtering.
+[ INFO] [1780494807.096889880]: Built RGB camera cloud from aligned depth with 73643 points before voxel filtering.
+[ INFO] [1780494812.112232224]: Built RGB camera cloud from aligned depth with 74048 points before voxel filtering.
+[ INFO] [1780494817.123623641]: Built RGB camera cloud from aligned depth with 73795 points before voxel filtering.
+[ INFO] [1780494822.130821090]: Built RGB camera cloud from aligned depth with 73426 points before voxel filtering.
+[ INFO] [1780494827.142725084]: Built RGB camera cloud from aligned depth with 74299 points before voxel filtering.
+[ INFO] [1780494832.152114414]: Built RGB camera cloud from aligned depth with 74204 points before voxel filtering.
+[ INFO] [1780494837.162688132]: Built RGB camera cloud from aligned depth with 73706 points before voxel filtering.
+[ INFO] [1780494842.181482200]: Built RGB camera cloud from aligned depth with 73642 points before voxel filtering.
+[ INFO] [1780494847.187822078]: Built RGB camera cloud from aligned depth with 73619 points before voxel filtering.
+[ INFO] [1780494852.198675477]: Built RGB camera cloud from aligned depth with 73827 points before voxel filtering.
+[ INFO] [1780494857.213342394]: Built RGB camera cloud from aligned depth with 73691 points before voxel filtering.
+[ INFO] [1780494862.216220403]: Built RGB camera cloud from aligned depth with 71922 points before voxel filtering.
+[ INFO] [1780494867.233642594]: Built RGB camera cloud from aligned depth with 73882 points before voxel filtering.
+[ INFO] [1780494872.239615591]: Built RGB camera cloud from aligned depth with 74193 points before voxel filtering.
+[ INFO] [1780494877.255827889]: Built RGB camera cloud from aligned depth with 73357 points before voxel filtering.
+[ INFO] [1780494882.264349088]: Built RGB camera cloud from aligned depth with 74465 points before voxel filtering.
+[ INFO] [1780494887.277752288]: Built RGB camera cloud from aligned depth with 74089 points before voxel filtering.
+[ INFO] [1780494892.292865222]: Built RGB camera cloud from aligned depth with 74070 points before voxel filtering.
+[ INFO] [1780494897.298641674]: Built RGB camera cloud from aligned depth with 74133 points before voxel filtering.
+[ INFO] [1780494902.316949629]: Built RGB camera cloud from aligned depth with 74129 points before voxel filtering.
+[ INFO] [1780494907.318245616]: Built RGB camera cloud from aligned depth with 74184 points before voxel filtering.
+shutdown request: [/base_link_to_realsense] Reason: new node registered with same name
