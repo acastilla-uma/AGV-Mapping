@@ -1,12 +1,14 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-RUN_DIR="${RUN_DIR:-/mnt/ros/agv_mapping}"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+WORKSPACE="${WORKSPACE:-$(cd "$SCRIPT_DIR/.." && pwd)}"
+ROS_ROOT_DIR="$(cd "$WORKSPACE/.." && pwd)"
+RUN_DIR="${RUN_DIR:-$ROS_ROOT_DIR/agv_mapping}"
 PID_FILE="${PID_FILE:-$RUN_DIR/pids}"
 
 
 source /opt/ros/melodic/setup.bash >/dev/null 2>&1 || true
-WORKSPACE="${WORKSPACE:-/mnt/ros/catkin_ws}"
 if [ -f "$WORKSPACE/devel/setup.bash" ]; then
   source "$WORKSPACE/devel/setup.bash" >/dev/null 2>&1 || true
 fi
@@ -15,6 +17,13 @@ if rosnode list 2>/dev/null | grep -qx "/accumulator_node"; then
   echo "Saving accumulated clouds before shutdown..."
   if ! timeout 30s rosservice call /accumulator_node/save_accumulated "{}" >/dev/null 2>&1; then
     echo "WARNING: save_accumulated did not complete before shutdown; continuing stop."
+  fi
+fi
+
+if rosnode list 2>/dev/null | grep -qx "/mapping_metadata_logger"; then
+  echo "Saving mapping metadata before shutdown..."
+  if ! timeout 30s rosservice call /mapping_metadata_logger/save_metadata "{}" >/dev/null 2>&1; then
+    echo "WARNING: save_metadata did not complete before shutdown; continuing stop."
   fi
 fi
 
@@ -44,6 +53,7 @@ fi
 # roslaunch may have exited while nodelets stayed alive. Kill known mapping nodes too.
 for node in \
   /accumulator_node \
+  /mapping_metadata_logger \
   /base_link_to_realsense \
   /camera/realsense2_camera \
   /camera/realsense2_camera_manager \
@@ -70,4 +80,3 @@ done
 
 
 echo "Stopped mapping processes."
-

@@ -3,9 +3,11 @@ project(scout_pointcloud_accumulator)
 
 find_package(catkin REQUIRED COMPONENTS
   roscpp
+  rospy
   sensor_msgs
   pcl_ros
   pcl_conversions
+  tf
   tf2_ros
   tf2_sensor_msgs
   std_srvs
@@ -14,7 +16,7 @@ find_package(catkin REQUIRED COMPONENTS
 find_package(PCL REQUIRED)
 
 catkin_package(
-  CATKIN_DEPENDS roscpp sensor_msgs pcl_ros pcl_conversions tf2_ros tf2_sensor_msgs std_srvs
+  CATKIN_DEPENDS roscpp rospy sensor_msgs pcl_ros pcl_conversions tf tf2_ros tf2_sensor_msgs std_srvs
 )
 
 include_directories(
@@ -31,6 +33,7 @@ install(TARGETS accumulator_node
 )
 
 catkin_install_python(PROGRAMS
+  scripts/mapping_metadata_logger.py
   scripts/static_transform_rpy.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
