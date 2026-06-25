@@ -1,5 +1,6 @@
 <launch>
   <arg name="output_pcd" default="/tmp/accumulated_cloud.pcd" />
+  <arg name="metadata_dir" default="" />
   <arg name="target_frame" default="map" />
   <arg name="robot_frame" default="base_link" />
 
@@ -11,13 +12,15 @@
 
   <arg name="doback_enable" default="false" />
   <arg name="doback_required" default="false" />
-  <arg name="doback_port" default="/dev/ttyACM0" />
+  <arg name="doback_port" default="auto" />
   <arg name="doback_baud" default="115200" />
+  <arg name="doback_test_file" default="" />
   <arg name="join_slop_sec" default="2.0" />
 
   <node pkg="scout_pointcloud_accumulator" type="mapping_metadata_logger.py"
         name="mapping_metadata_logger" output="screen">
     <param name="output_pcd" value="$(arg output_pcd)" />
+    <param name="metadata_dir" value="$(arg metadata_dir)" />
     <param name="target_frame" value="$(arg target_frame)" />
     <param name="robot_frame" value="$(arg robot_frame)" />
     <param name="gps_tcp_enable" value="$(arg gps_tcp_enable)" />
@@ -29,6 +32,7 @@
     <param name="doback_required" value="$(arg doback_required)" />
     <param name="doback_port" value="$(arg doback_port)" />
     <param name="doback_baud" value="$(arg doback_baud)" />
+    <param name="doback_test_file" value="$(arg doback_test_file)" />
     <param name="join_slop_sec" value="$(arg join_slop_sec)" />
   </node>
 </launch>

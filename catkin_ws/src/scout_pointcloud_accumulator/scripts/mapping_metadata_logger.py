@@ -2,6 +2,7 @@
 from __future__ import print_function
 
 import csv
+import glob
 import json
 import math
 import os
@@ -13,6 +14,11 @@ from datetime import datetime
 import rospy
 import tf
 from std_srvs.srv import Empty, EmptyResponse
+
+try:
+    import serial
+except ImportError:
+    serial = None
 
 
 GPS_FIELDS = [
@@ -29,6 +35,38 @@ GPS_FIELDS = [
     "fix_ok",
     "waiting_for_fix",
 ]
+
+DOBACK_COLUMNS = [
+    "ax",
+    "ay",
+    "az",
+    "gx",
+    "gy",
+    "gz",
+    "roll",
+    "pitch",
+    "yaw",
+    "timeantwifi",
+    "usciclo1",
+    "usciclo2",
+    "usciclo3",
+    "usciclo4",
+    "usciclo5",
+    "si",
+    "accmag",
+    "microsds",
+    "k3",
+]
+
+DOBACK_RAW_FIELDS = [
+    "ros_time",
+    "recv_time_utc",
+    "raw_line",
+    "parse_ok",
+    "error",
+]
+
+DOBACK_STABILITY_FIELDS = ["ros_time", "recv_time_utc"] + DOBACK_COLUMNS
 
 MAP_FIELDS = [
     "ros_time",
@@ -48,6 +86,19 @@ MAP_FIELDS = [
     "waiting_for_fix",
     "gps_text",
     "tf_ok",
+    "doback_ok",
+    "doback_age_sec",
+    "doback_ax",
+    "doback_ay",
+    "doback_az",
+    "doback_gx",
+    "doback_gy",
+    "doback_gz",
+    "doback_roll",
+    "doback_pitch",
+    "doback_yaw",
+    "doback_si",
+    "doback_accmag",
 ]
 
 
@@ -59,6 +110,10 @@ def utc_now():
 def append_suffix(path, suffix, ext):
     root, _ = os.path.splitext(path)
     return root + suffix + ext
+
+
+def timestamp_slug():
+    return datetime.utcnow().strftime("%Y%m%d_%H%M%S")
 
 
 def safe_float(value):
@@ -169,9 +224,24 @@ def extract_gps(payload):
     return data
 
 
+def parse_doback_line(line):
+    parts = [part.strip() for part in line.strip().split(";")]
+    if len(parts) == 1 and "," in line:
+        parts = [part.strip() for part in line.strip().split(",")]
+    if not parts or parts[0].lower() == "ax":
+        return None, "header"
+    if len(parts) < len(DOBACK_COLUMNS):
+        return None, "expected_%d_fields_got_%d" % (len(DOBACK_COLUMNS), len(parts))
+    data = {}
+    for index, name in enumerate(DOBACK_COLUMNS):
+        data[name] = parts[index]
+    return data, ""
+
+
 class MetadataLogger(object):
     def __init__(self):
         self.output_pcd = rospy.get_param("~output_pcd", "/tmp/accumulated_cloud.pcd")
+        self.metadata_dir_param = rospy.get_param("~metadata_dir", "")
         self.target_frame = rospy.get_param("~target_frame", "map").lstrip("/")
         self.robot_frame = rospy.get_param("~robot_frame", "base_link").lstrip("/")
         self.gps_tcp_enable = rospy.get_param("~gps_tcp_enable", True)
@@ -181,8 +251,9 @@ class MetadataLogger(object):
         self.gps_required = rospy.get_param("~gps_required", False)
         self.doback_enable = rospy.get_param("~doback_enable", False)
         self.doback_required = rospy.get_param("~doback_required", False)
-        self.doback_port = rospy.get_param("~doback_port", "/dev/ttyACM0")
+        self.doback_port = rospy.get_param("~doback_port", "auto")
         self.doback_baud = int(rospy.get_param("~doback_baud", 115200))
+        self.doback_test_file = rospy.get_param("~doback_test_file", "")
         self.join_slop_sec = float(rospy.get_param("~join_slop_sec", 2.0))
 
         self.lock = threading.Lock()
@@ -191,14 +262,19 @@ class MetadataLogger(object):
         self.server_socket = None
         self.listener = tf.TransformListener()
         self.gps_count = 0
+        self.doback_count = 0
         self.latest_gps = None
+        self.latest_doback = None
+        self.active_doback_port = ""
 
-        self.gps_csv_path = append_suffix(self.output_pcd, "_gps", ".csv")
-        self.gps_raw_path = append_suffix(self.output_pcd, "_gps_raw", ".jsonl")
-        self.map_track_path = append_suffix(self.output_pcd, "_map_track", ".csv")
-        self.manifest_path = append_suffix(self.output_pcd, "_session_manifest", ".json")
-        self.doback_raw_path = append_suffix(self.output_pcd, "_doback_raw", ".csv")
-        self.doback_stability_path = append_suffix(self.output_pcd, "_doback_stability", ".csv")
+        self.session_dir = self.resolve_metadata_dir()
+        self.gps_csv_path = os.path.join(self.session_dir, "gps.csv")
+        self.gps_raw_path = os.path.join(self.session_dir, "gps_raw.jsonl")
+        self.map_track_path = os.path.join(self.session_dir, "trayectoria_gps_doback.csv")
+        self.manifest_path = os.path.join(self.session_dir, "manifest.json")
+        self.doback_raw_path = os.path.join(self.session_dir, "doback_raw.csv")
+        self.doback_stability_path = os.path.join(self.session_dir, "doback.csv")
+        self.legacy_paths = self.build_legacy_paths()
 
         self.ensure_parent(self.gps_csv_path)
         self.gps_csv = open(self.gps_csv_path, "a")
@@ -213,10 +289,23 @@ class MetadataLogger(object):
 
         self.gps_raw = open(self.gps_raw_path, "a")
 
+        self.doback_raw = open(self.doback_raw_path, "a")
+        self.doback_raw_writer = csv.DictWriter(self.doback_raw, fieldnames=DOBACK_RAW_FIELDS)
+        if os.path.getsize(self.doback_raw_path) == 0:
+            self.doback_raw_writer.writeheader()
+
+        self.doback_csv = open(self.doback_stability_path, "a")
+        self.doback_writer = csv.DictWriter(self.doback_csv, fieldnames=DOBACK_STABILITY_FIELDS)
+        if os.path.getsize(self.doback_stability_path) == 0:
+            self.doback_writer.writeheader()
+
         self.save_srv = rospy.Service("~save_metadata", Empty, self.save_service)
 
         if self.doback_enable:
-            rospy.logwarn("DOBACK serial logging is reserved for the next phase; current node records GPS TCP only.")
+            self.doback_thread = threading.Thread(target=self.doback_serial_loop)
+            self.doback_thread.daemon = True
+            self.doback_thread.start()
+            rospy.loginfo("DOBACK serial logger enabled on %s @ %d baud", self.doback_port, self.doback_baud)
         if self.gps_tcp_enable:
             self.server_thread = threading.Thread(target=self.tcp_server)
             self.server_thread.daemon = True
@@ -236,6 +325,27 @@ class MetadataLogger(object):
         directory = os.path.dirname(path)
         if directory and not os.path.isdir(directory):
             os.makedirs(directory)
+
+    def resolve_metadata_dir(self):
+        if self.metadata_dir_param:
+            path = self.metadata_dir_param
+        else:
+            workspace_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..", ".."))
+            session_name = "sesion_" + timestamp_slug()
+            path = os.path.join(workspace_root, "datos", session_name)
+        if not os.path.isdir(path):
+            os.makedirs(path)
+        return path
+
+    def build_legacy_paths(self):
+        return {
+            "gps_csv": append_suffix(self.output_pcd, "_gps", ".csv"),
+            "gps_raw_jsonl": append_suffix(self.output_pcd, "_gps_raw", ".jsonl"),
+            "map_track_csv": append_suffix(self.output_pcd, "_map_track", ".csv"),
+            "doback_raw_csv": append_suffix(self.output_pcd, "_doback_raw", ".csv"),
+            "doback_stability_csv": append_suffix(self.output_pcd, "_doback_stability", ".csv"),
+            "manifest_json": append_suffix(self.output_pcd, "_session_manifest", ".json"),
+        }
 
     def tcp_server(self):
         server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -266,6 +376,94 @@ class MetadataLogger(object):
         if not self.gps_allowed_hosts:
             return True
         return host in self.gps_allowed_hosts
+
+    def resolve_doback_port(self):
+        if self.doback_port and self.doback_port.lower() != "auto":
+            return self.doback_port
+        candidates = sorted(glob.glob("/dev/ttyACM*") + glob.glob("/dev/ttyUSB*"))
+        if not candidates:
+            return ""
+        return candidates[0]
+
+    def doback_serial_loop(self):
+        if self.doback_test_file:
+            rospy.loginfo("DOBACK test file enabled: %s", self.doback_test_file)
+            while not rospy.is_shutdown() and not self.shutdown_event.is_set():
+                try:
+                    with open(self.doback_test_file) as handle:
+                        for line in handle:
+                            if rospy.is_shutdown() or self.shutdown_event.is_set():
+                                break
+                            line = line.strip()
+                            if line:
+                                self.record_doback_line(line)
+                            time.sleep(0.1)
+                    time.sleep(1.0)
+                except Exception as exc:
+                    rospy.logwarn_throttle(10.0, "DOBACK test file error: %s", exc)
+                    time.sleep(2.0)
+            return
+
+        if serial is None:
+            rospy.logerr("DOBACK enabled but python-serial is not available. Install python-serial.")
+            return
+
+        while not rospy.is_shutdown() and not self.shutdown_event.is_set():
+            try:
+                port_name = self.resolve_doback_port()
+                if not port_name:
+                    rospy.logwarn_throttle(10.0, "DOBACK serial auto-detect found no /dev/ttyACM* or /dev/ttyUSB* devices.")
+                    time.sleep(2.0)
+                    continue
+                port = serial.Serial(port_name, self.doback_baud, timeout=1.0)
+                self.active_doback_port = port_name
+                rospy.loginfo("DOBACK serial opened: %s", port_name)
+                while not rospy.is_shutdown() and not self.shutdown_event.is_set():
+                    raw = port.readline()
+                    if not raw:
+                        continue
+                    if isinstance(raw, bytes):
+                        line = raw.decode("utf-8", errors="replace").strip()
+                    else:
+                        line = raw.strip()
+                    if line:
+                        self.record_doback_line(line)
+                port.close()
+            except Exception as exc:
+                rospy.logwarn_throttle(10.0, "DOBACK serial error on %s: %s", self.doback_port, exc)
+                time.sleep(2.0)
+
+    def record_doback_line(self, line):
+        ros_time = rospy.Time.now().to_sec()
+        recv_time_utc = utc_now()
+        data, error = parse_doback_line(line)
+        raw_row = {
+            "ros_time": ros_time,
+            "recv_time_utc": recv_time_utc,
+            "raw_line": line,
+            "parse_ok": "1" if data is not None else "0",
+            "error": error,
+        }
+        with self.lock:
+            self.doback_raw_writer.writerow(raw_row)
+            self.doback_raw.flush()
+            if data is not None:
+                row = {"ros_time": ros_time, "recv_time_utc": recv_time_utc}
+                row.update(data)
+                self.doback_writer.writerow(row)
+                self.doback_csv.flush()
+                self.latest_doback = row
+                self.doback_count += 1
+        if data is not None:
+            rospy.loginfo_throttle(
+                5.0,
+                "DOBACK samples received: %d latest roll=%s pitch=%s yaw=%s si=%s",
+                self.doback_count,
+                data.get("roll", ""),
+                data.get("pitch", ""),
+                data.get("yaw", ""),
+                data.get("si", ""),
+            )
 
     def handle_client(self, conn, addr):
         host = addr[0]
@@ -322,7 +520,10 @@ class MetadataLogger(object):
             "waiting_for_fix": gps.get("waiting_for_fix", ""),
         }
 
-        map_row = self.build_map_row(ros_time, payload["recv_time_utc"], gps, payload.get("text", ""))
+        with self.lock:
+            latest_doback = dict(self.latest_doback) if self.latest_doback is not None else None
+
+        map_row = self.build_map_row(ros_time, payload["recv_time_utc"], gps, payload.get("text", ""), latest_doback)
         with self.lock:
             self.gps_raw.write(json.dumps(payload, sort_keys=True) + "\n")
             self.gps_raw.flush()
@@ -334,7 +535,7 @@ class MetadataLogger(object):
             self.gps_count += 1
         rospy.loginfo_throttle(5.0, "GPS TCP samples received: %d latest='%s'", self.gps_count, payload.get("text", ""))
 
-    def build_map_row(self, ros_time, recv_time_utc, gps, gps_text):
+    def build_map_row(self, ros_time, recv_time_utc, gps, gps_text, doback):
         row = {
             "ros_time": ros_time,
             "recv_time_utc": recv_time_utc,
@@ -353,7 +554,41 @@ class MetadataLogger(object):
             "waiting_for_fix": gps.get("waiting_for_fix", ""),
             "gps_text": gps_text,
             "tf_ok": "0",
+            "doback_ok": "0",
+            "doback_age_sec": "",
+            "doback_ax": "",
+            "doback_ay": "",
+            "doback_az": "",
+            "doback_gx": "",
+            "doback_gy": "",
+            "doback_gz": "",
+            "doback_roll": "",
+            "doback_pitch": "",
+            "doback_yaw": "",
+            "doback_si": "",
+            "doback_accmag": "",
         }
+        if doback is not None:
+            try:
+                age = abs(float(ros_time) - float(doback.get("ros_time", ros_time)))
+            except (TypeError, ValueError):
+                age = ""
+            if age == "" or age <= self.join_slop_sec:
+                row.update({
+                    "doback_ok": "1",
+                    "doback_age_sec": age,
+                    "doback_ax": doback.get("ax", ""),
+                    "doback_ay": doback.get("ay", ""),
+                    "doback_az": doback.get("az", ""),
+                    "doback_gx": doback.get("gx", ""),
+                    "doback_gy": doback.get("gy", ""),
+                    "doback_gz": doback.get("gz", ""),
+                    "doback_roll": doback.get("roll", ""),
+                    "doback_pitch": doback.get("pitch", ""),
+                    "doback_yaw": doback.get("yaw", ""),
+                    "doback_si": doback.get("si", ""),
+                    "doback_accmag": doback.get("accmag", ""),
+                })
         try:
             trans, rot = self.listener.lookupTransform(self.target_frame, self.robot_frame, rospy.Time(0))
             roll, pitch, yaw = tf.transformations.euler_from_quaternion(rot)
@@ -378,21 +613,29 @@ class MetadataLogger(object):
         manifest = {
             "time_utc": utc_now(),
             "output_pcd": self.output_pcd,
+            "metadata_dir": self.session_dir,
             "target_frame": self.target_frame,
             "robot_frame": self.robot_frame,
             "gps_tcp_bind": self.gps_tcp_bind,
             "gps_tcp_port": self.gps_tcp_port,
             "gps_allowed_hosts": sorted(self.gps_allowed_hosts),
             "gps_count": self.gps_count,
+            "doback_count": self.doback_count,
             "files": {
                 "gps_csv": self.gps_csv_path,
                 "gps_raw_jsonl": self.gps_raw_path,
                 "map_track_csv": self.map_track_path,
                 "doback_raw_csv": self.doback_raw_path,
                 "doback_stability_csv": self.doback_stability_path,
+                "manifest_json": self.manifest_path,
             },
+            "legacy_file_names": self.legacy_paths,
             "doback_enabled": self.doback_enable,
-            "doback_note": "DOBACK serial logging is reserved for the next phase." if self.doback_enable else "",
+            "doback_port": self.doback_port,
+            "active_doback_port": self.active_doback_port,
+            "doback_baud": self.doback_baud,
+            "doback_test_file": self.doback_test_file,
+            "join_slop_sec": self.join_slop_sec,
         }
         with open(self.manifest_path, "w") as handle:
             json.dump(manifest, handle, indent=2, sort_keys=True)
@@ -412,6 +655,8 @@ class MetadataLogger(object):
         self.gps_csv.close()
         self.map_csv.close()
         self.gps_raw.close()
+        self.doback_raw.close()
+        self.doback_csv.close()
 
 
 def main():
