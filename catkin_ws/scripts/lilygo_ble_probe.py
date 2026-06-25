@@ -75,7 +75,11 @@ def build_parser():
             "and listens for notifications without contacting the AGV."
         )
     )
-    parser.add_argument("--name", default="LilyGO", help="Device name substring to match during scan.")
+    parser.add_argument(
+        "--name",
+        default="LilyGO,T-Echo",
+        help="Comma-separated device name substrings to match during scan.",
+    )
     parser.add_argument("--address", help="Exact BLE device address/id to connect to.")
     parser.add_argument("--scan-seconds", type=float, default=10.0, help="BLE scan duration.")
     parser.add_argument("--listen-seconds", type=float, default=30.0, help="Notification listen duration.")
@@ -131,8 +135,9 @@ async def scan_devices(scanner, args, log):
         is_match = False
         if args.address and str(address).lower() == args.address.lower():
             is_match = True
-        elif args.name and args.name.lower() in name.lower():
-            is_match = True
+        elif args.name:
+            filters = [part.strip().lower() for part in args.name.split(",") if part.strip()]
+            is_match = any(part in name.lower() for part in filters)
         elif not args.name and not args.address:
             is_match = True
         if is_match:
