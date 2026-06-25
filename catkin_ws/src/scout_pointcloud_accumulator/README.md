@@ -171,8 +171,10 @@ chars=0 sentences_fix=0 failed_checksum=0 sats=0 hdop=? waiting_for_fix=1
 ```
 
 Eso ya prueba la comunicacion PC -> Xavier. Cuando haya fix GPS, el logger
-tambien intentara extraer `latitude`, `longitude`, `altitude`, `sats` y `hdop`
-si el firmware los envia como NMEA, JSON o claves `key=value`.
+guarda el CSV legible `gps.csv` con columnas en espanol: `latitud`, `longitud`,
+`altitud_m`, `satelites`, `hdop`, `fix_valido` y `esperando_fix`. Tambien deja
+alias compatibles en ingles (`latitude`, `longitude`, etc.). Puede extraer esos
+datos si el firmware los envia como NMEA, JSON o claves `key=value`.
 
 ## Fase 3: asociar DOBACK a cada punto GPS
 
@@ -212,9 +214,10 @@ trayectoria_gps_doback.csv
 manifest.json
 ```
 
-`trayectoria_gps_doback.csv` es el principal: cada fila GPS incluye pose
-`map -> base_link` si hay TF, y columnas `doback_*` con la estabilidad mas
-cercana dentro de `join_slop_sec`.
+`trayectoria_gps_doback.csv` es el principal: cada fila GPS incluye `latitud`,
+`longitud`, `altitud_m`, `satelites`, `hdop`, la pose `map -> base_link` si hay
+TF, y columnas `doback_*` con la estabilidad mas cercana dentro de
+`join_slop_sec`.
 
 El GPS TCP acepta JSON, CSV simple o NMEA `GGA/RMC`. Ejemplos validos:
 
