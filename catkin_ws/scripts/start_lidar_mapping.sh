@@ -12,6 +12,7 @@ OUTPUT_DIR="${1:-${OUTPUT_DIR:-$ROS_ROOT_DIR/maps}}"
 RUN_DIR="${RUN_DIR:-$ROS_ROOT_DIR/agv_mapping}"
 LOG_DIR="${LOG_DIR:-$RUN_DIR/logs}"
 PID_FILE="${PID_FILE:-$RUN_DIR/pids}"
+METADATA_DIR="${METADATA_DIR:-$ROS_ROOT_DIR/datos/metadata_$(date +%Y%m%d_%H%M%S)}"
 
 LIDAR_TOPIC="${LIDAR_TOPIC:-${INPUT_TOPIC:-/registered_cloud}}"
 CAMERA_TOPIC="${CAMERA_TOPIC:-/camera/depth/color/points}"
@@ -51,7 +52,7 @@ LEGO_LOCK_ROLL_PITCH="${LEGO_LOCK_ROLL_PITCH:-true}"
 ENABLE_METADATA_LOGGER="${ENABLE_METADATA_LOGGER:-true}"
 DOBACK_ENABLE="${DOBACK_ENABLE:-false}"
 DOBACK_REQUIRED="${DOBACK_REQUIRED:-false}"
-DOBACK_PORT="${DOBACK_PORT:-/dev/ttyACM0}"
+DOBACK_PORT="${DOBACK_PORT:-auto}"
 DOBACK_BAUD="${DOBACK_BAUD:-115200}"
 GPS_TCP_ENABLE="${GPS_TCP_ENABLE:-true}"
 GPS_TCP_BIND="${GPS_TCP_BIND:-0.0.0.0}"
@@ -193,6 +194,7 @@ start_process accumulator roslaunch scout_pointcloud_accumulator accumulate.laun
 if [ "$ENABLE_METADATA_LOGGER" = "true" ]; then
   start_process metadata roslaunch scout_pointcloud_accumulator mapping_metadata.launch \
     output_pcd:="$PCD_FILE" \
+    metadata_dir:="$METADATA_DIR" \
     target_frame:="$TARGET_FRAME" \
     robot_frame:="$METADATA_ROBOT_FRAME" \
     doback_enable:="$DOBACK_ENABLE" \
@@ -231,11 +233,12 @@ Accumulated PCD outputs:
   ${PCD_FILE%.pcd}_fused.pcd
 
 Metadata outputs:
-  ${PCD_FILE%.pcd}_doback_raw.csv
-  ${PCD_FILE%.pcd}_doback_stability.csv
-  ${PCD_FILE%.pcd}_gps.csv
-  ${PCD_FILE%.pcd}_map_track.csv
-  ${PCD_FILE%.pcd}_session_manifest.json
+  $METADATA_DIR/gps.csv
+  $METADATA_DIR/gps_raw.jsonl
+  $METADATA_DIR/doback.csv
+  $METADATA_DIR/doback_raw.csv
+  $METADATA_DIR/trayectoria_gps_doback.csv
+  $METADATA_DIR/manifest.json
 
 PC LilyGO bridge:
   python $WORKSPACE/scripts/lilygo_ble_tcp_bridge.py --address CE:BA:33:E1:3A:39 --agv-host 100.123.78.14 --agv-port $GPS_TCP_PORT

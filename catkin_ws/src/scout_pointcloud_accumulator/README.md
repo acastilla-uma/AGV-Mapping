@@ -65,20 +65,20 @@ map
 
 ## Archivos guardados
 
-Al llamar al servicio de guardado se generan:
+Los CSV/JSON del GPS y DOBACK se guardan en una subcarpeta por sesion dentro de
+`datos/`:
 
 ```text
-*_lidar.pcd   LiDAR solo, PointXYZI
-*_camera.pcd  RealSense sola, PointXYZRGB
-*_fused.pcd   LiDAR + RealSense, PointXYZRGB
-*_doback_raw.csv
-*_doback_stability.csv
-*_gps.csv
-*_map_track.csv
-*_session_manifest.json
+datos/metadata_YYYYMMDD_HHMMSS/
+  gps.csv
+  gps_raw.jsonl
+  doback.csv
+  doback_raw.csv
+  trayectoria_gps_doback.csv
+  manifest.json
 ```
 
-Directorio por defecto:
+Los PCD del mapa siguen guardandose en:
 
 ```text
 /media/agilex/0123-4567/ros/maps
@@ -174,12 +174,47 @@ Eso ya prueba la comunicacion PC -> Xavier. Cuando haya fix GPS, el logger
 tambien intentara extraer `latitude`, `longitude`, `altitude`, `sats` y `hdop`
 si el firmware los envia como NMEA, JSON o claves `key=value`.
 
-La parte DOBACK queda para la fase siguiente. Su formato previsto, basado en
-`esp_datareceiver`, es:
+## Fase 3: asociar DOBACK a cada punto GPS
+
+El logger tambien puede leer DOBACK por serie y asociar la muestra mas reciente
+a cada fila GPS/mapa. El formato, basado en `esp_datareceiver`, es:
 
 ```text
 ax;ay;az;gx;gy;gz;roll;pitch;yaw;timeantwifi;usciclo1;usciclo2;usciclo3;usciclo4;usciclo5;si;accmag;microsds;k3
 ```
+
+Arranque con DOBACK conectado a la Xavier:
+
+```bash
+roslaunch scout_pointcloud_accumulator mapping_metadata.launch \
+  output_pcd:=/media/agilex/0123-4567/ros/maps/lilygo_doback_test.pcd \
+  metadata_dir:=/media/agilex/0123-4567/ros/datos/prueba_lilygo_doback \
+  gps_tcp_port:=29500 \
+  gps_allowed_hosts:=100.93.178.118,127.0.0.1 \
+  doback_enable:=true \
+  doback_port:=auto \
+  doback_baud:=115200 \
+  join_slop_sec:=2.0
+```
+
+Con `doback_port:=auto` se usa el primer puerto encontrado entre
+`/dev/ttyACM*` y `/dev/ttyUSB*`. Si sabes el puerto exacto, puedes fijarlo con
+`doback_port:=/dev/ttyUSB0` o `doback_port:=/dev/ttyACM0`.
+
+Archivos generados:
+
+```text
+gps.csv
+gps_raw.jsonl
+doback.csv
+doback_raw.csv
+trayectoria_gps_doback.csv
+manifest.json
+```
+
+`trayectoria_gps_doback.csv` es el principal: cada fila GPS incluye pose
+`map -> base_link` si hay TF, y columnas `doback_*` con la estabilidad mas
+cercana dentro de `join_slop_sec`.
 
 El GPS TCP acepta JSON, CSV simple o NMEA `GGA/RMC`. Ejemplos validos:
 
@@ -192,7 +227,7 @@ $GNGGA,...
 El archivo principal para postproceso es:
 
 ```text
-*_map_track.csv
+trayectoria_gps_doback.csv
 ```
 
 Incluye `map_x,map_y,map_yaw`, GPS cercano, estabilidad DOBACK cercana y flags `tf_ok,gps_ok,doback_ok`.
