@@ -104,7 +104,41 @@ LiDAR + RealSense:
 SAVE_LIDAR=true SAVE_CAMERA=true ./scripts/start_lidar_mapping.sh
 ```
 
-## GPS LilyGO + DOBACK
+## Fase 1: probar LilyGO por Bluetooth en el PC
+
+Antes de programar comunicacion con la Jetson/Xavier, primero hay que comprobar
+que el PC recibe datos del LilyGO T-Echo por Bluetooth directo. Esta fase no usa
+ROS, no usa DOBACK y no envia nada al AGV.
+
+En el PC Windows:
+
+```powershell
+cd C:\ruta\al\repo\AGV-Mapping
+py -m pip install bleak
+py catkin_ws\scripts\lilygo_ble_probe.py --scan-seconds 15 --output lilygo_probe.jsonl
+```
+
+Si aparecen varios dispositivos, repite usando la direccion que imprima el
+script:
+
+```powershell
+py catkin_ws\scripts\lilygo_ble_probe.py --address XX:XX:XX:XX:XX:XX --listen-seconds 60 --output lilygo_probe.jsonl
+```
+
+Evidencia que hay que revisar antes de seguir:
+
+- La consola debe mostrar el LilyGO, sus servicios/caracteristicas BLE y, si el
+  firmware ya emite datos, eventos `READ` o `NOTIFY`.
+- El archivo `lilygo_probe.jsonl` guarda las muestras crudas con timestamp,
+  `raw_hex` y decodificacion UTF-8 de mejor esfuerzo.
+- Si el resultado es `TRANSPORT_NOT_CONFIRMED` o `NO_GPS_PAYLOAD_OBSERVED`, no
+  se debe continuar a Jetson/TCP todavia; primero hay que confirmar el modo
+  Bluetooth real del LilyGO.
+
+## Fase futura: GPS LilyGO + DOBACK en el AGV
+
+Esta seccion describe la integracion posterior. No debe ejecutarse hasta que la
+fase 1 haya demostrado que el PC recibe datos del LilyGO por Bluetooth directo.
 
 El logger de metadatos corre en el AGV junto al acumulador. Recibe:
 
