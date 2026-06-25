@@ -38,7 +38,7 @@ def encode_data(data):
         return {"raw_hex": "", "text": ""}
     raw = bytes(data)
     return {
-        "raw_hex": raw.hex(" "),
+        "raw_hex": " ".join("{:02x}".format(value) for value in bytearray(raw)),
         "text": decode_text(raw),
     }
 

@@ -118,8 +118,9 @@ py -m pip install bleak
 py catkin_ws\scripts\lilygo_ble_probe.py --scan-seconds 15 --output lilygo_probe.jsonl
 ```
 
-Si aparecen varios dispositivos, repite usando la direccion que imprima el
-script:
+Por defecto el probe busca nombres que contengan `LilyGO` o `T-Echo`. Si aparecen
+varios dispositivos, o si quieres conectar directamente con el que ya viste,
+repite usando la direccion que imprima el script:
 
 ```powershell
 py catkin_ws\scripts\lilygo_ble_probe.py --address XX:XX:XX:XX:XX:XX --listen-seconds 60 --output lilygo_probe.jsonl
@@ -135,36 +136,49 @@ Evidencia que hay que revisar antes de seguir:
   se debe continuar a Jetson/TCP todavia; primero hay que confirmar el modo
   Bluetooth real del LilyGO.
 
-## Fase futura: GPS LilyGO + DOBACK en el AGV
+## Fase 2: GPS LilyGO por TCP hacia el AGV
 
-Esta seccion describe la integracion posterior. No debe ejecutarse hasta que la
-fase 1 haya demostrado que el PC recibe datos del LilyGO por Bluetooth directo.
+La fase 2 ya puede usarse cuando la fase 1 haya demostrado que el PC recibe
+datos del LilyGO por Bluetooth directo. En esta fase el PC reenvia las
+notificaciones BLE del LilyGO a la Xavier por TCP y la Xavier las guarda junto
+con la pose `map -> base_link` cuando haya TF disponible.
 
-El logger de metadatos corre en el AGV junto al acumulador. Recibe:
-
-- DOBACK por serie local del AGV, formato `esp_datareceiver`:
-  ```text
-  ax;ay;az;gx;gy;gz;roll;pitch;yaw;timeantwifi;usciclo1;usciclo2;usciclo3;usciclo4;usciclo5;si;accmag;microsds;k3
-  ```
-- GPS LilyGO T-Echo por TCP desde el PC hacia el AGV.
-
-Arranque en el AGV:
+Arranque en el AGV/Xavier:
 
 ```bash
 cd /media/agilex/0123-4567/ros/catkin_ws
-DOBACK_ENABLE=true DOBACK_PORT=/dev/ttyACM0 GPS_TCP_ENABLE=true GPS_TCP_PORT=29500 ./scripts/start_lidar_mapping.sh
+source /opt/ros/melodic/setup.bash
+source devel/setup.bash
+roslaunch scout_pointcloud_accumulator mapping_metadata.launch \
+  output_pcd:=/media/agilex/0123-4567/ros/maps/lilygo_test.pcd \
+  gps_tcp_bind:=0.0.0.0 \
+  gps_tcp_port:=29500 \
+  gps_allowed_hosts:=100.93.178.118,127.0.0.1
 ```
 
-Bridge en el PC conectado por Bluetooth al LilyGO:
+Bridge en el PC Windows, usando el LilyGO detectado en fase 1:
 
-```bash
-python scripts/gps_lilygo_tcp_bridge.py --serial-port COM5 --agv-host 100.123.78.14 --agv-port 29500
+```powershell
+cd C:\ruta\al\repo\AGV-Mapping
+py -m pip install bleak
+py catkin_ws\scripts\lilygo_ble_tcp_bridge.py --address CE:BA:33:E1:3A:39 --agv-host 100.123.78.14 --agv-port 29500 --output lilygo_tcp_bridge.jsonl
 ```
 
-En Linux el puerto Bluetooth suele ser algo como `/dev/rfcomm0`:
+Mientras el LilyGO no tenga fix, el texto esperado sera parecido a:
 
-```bash
-python /media/agilex/0123-4567/ros/catkin_ws/scripts/gps_lilygo_tcp_bridge.py --serial-port /dev/rfcomm0 --agv-host 100.123.78.14
+```text
+chars=0 sentences_fix=0 failed_checksum=0 sats=0 hdop=? waiting_for_fix=1
+```
+
+Eso ya prueba la comunicacion PC -> Xavier. Cuando haya fix GPS, el logger
+tambien intentara extraer `latitude`, `longitude`, `altitude`, `sats` y `hdop`
+si el firmware los envia como NMEA, JSON o claves `key=value`.
+
+La parte DOBACK queda para la fase siguiente. Su formato previsto, basado en
+`esp_datareceiver`, es:
+
+```text
+ax;ay;az;gx;gy;gz;roll;pitch;yaw;timeantwifi;usciclo1;usciclo2;usciclo3;usciclo4;usciclo5;si;accmag;microsds;k3
 ```
 
 El GPS TCP acepta JSON, CSV simple o NMEA `GGA/RMC`. Ejemplos validos:

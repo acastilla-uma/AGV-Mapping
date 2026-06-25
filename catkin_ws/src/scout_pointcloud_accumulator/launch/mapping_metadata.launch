@@ -1,0 +1,34 @@
+<launch>
+  <arg name="output_pcd" default="/tmp/accumulated_cloud.pcd" />
+  <arg name="target_frame" default="map" />
+  <arg name="robot_frame" default="base_link" />
+
+  <arg name="gps_tcp_enable" default="true" />
+  <arg name="gps_tcp_bind" default="0.0.0.0" />
+  <arg name="gps_tcp_port" default="29500" />
+  <arg name="gps_allowed_hosts" default="100.93.178.118,127.0.0.1,::1" />
+  <arg name="gps_required" default="false" />
+
+  <arg name="doback_enable" default="false" />
+  <arg name="doback_required" default="false" />
+  <arg name="doback_port" default="/dev/ttyACM0" />
+  <arg name="doback_baud" default="115200" />
+  <arg name="join_slop_sec" default="2.0" />
+
+  <node pkg="scout_pointcloud_accumulator" type="mapping_metadata_logger.py"
+        name="mapping_metadata_logger" output="screen">
+    <param name="output_pcd" value="$(arg output_pcd)" />
+    <param name="target_frame" value="$(arg target_frame)" />
+    <param name="robot_frame" value="$(arg robot_frame)" />
+    <param name="gps_tcp_enable" value="$(arg gps_tcp_enable)" />
+    <param name="gps_tcp_bind" value="$(arg gps_tcp_bind)" />
+    <param name="gps_tcp_port" value="$(arg gps_tcp_port)" />
+    <param name="gps_allowed_hosts" value="$(arg gps_allowed_hosts)" />
+    <param name="gps_required" value="$(arg gps_required)" />
+    <param name="doback_enable" value="$(arg doback_enable)" />
+    <param name="doback_required" value="$(arg doback_required)" />
+    <param name="doback_port" value="$(arg doback_port)" />
+    <param name="doback_baud" value="$(arg doback_baud)" />
+    <param name="join_slop_sec" value="$(arg join_slop_sec)" />
+  </node>
+</launch>

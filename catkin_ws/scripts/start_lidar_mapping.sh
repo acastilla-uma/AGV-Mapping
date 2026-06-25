@@ -238,7 +238,7 @@ Metadata outputs:
   ${PCD_FILE%.pcd}_session_manifest.json
 
 PC LilyGO bridge:
-  python $WORKSPACE/scripts/gps_lilygo_tcp_bridge.py --serial-port COM5 --agv-host 100.123.78.14 --agv-port $GPS_TCP_PORT
+  python $WORKSPACE/scripts/lilygo_ble_tcp_bridge.py --address CE:BA:33:E1:3A:39 --agv-host 100.123.78.14 --agv-port $GPS_TCP_PORT
 
 Save at any time:
   $WORKSPACE/scripts/save_accumulated_map.sh
