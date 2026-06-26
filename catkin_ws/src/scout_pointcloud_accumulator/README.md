@@ -55,6 +55,8 @@ Parar:
 /registered_cloud           LiDAR instantaneo
 /accumulated_camera_points  RealSense acumulada, XYZRGB
 /camera/colored_points      RealSense instantanea, XYZRGB
+/agv_trajectory_path       Trayectoria AGV en map, tipo nav_msgs/Path
+/agv_trajectory_marker     Trayectoria AGV como linea, tipo visualization_msgs/Marker
 ```
 
 El `Fixed Frame` de RViz debe ser:
@@ -75,6 +77,7 @@ datos/metadata_YYYYMMDD_HHMMSS/
   doback.csv
   doback_raw.csv
   trayectoria_gps_doback.csv
+  trayectoria_agv_mapa.csv
   manifest.json
 ```
 
@@ -102,6 +105,48 @@ LiDAR + RealSense:
 
 ```bash
 SAVE_LIDAR=true SAVE_CAMERA=true ./scripts/start_lidar_mapping.sh
+```
+
+
+## Trayectoria del AGV sobre el mapa LiDAR
+
+El `mapping_metadata_logger.py` publica y guarda la trayectoria del AGV usando
+la TF `map -> base_link`. Esto no depende del fix GPS: si LeGO-LOAM publica la
+TF del robot en el mapa, RViz puede pintar la trayectoria encima del mapa LiDAR.
+
+Tópicos ROS publicados:
+
+```text
+/agv_trajectory_path
+/agv_trajectory_marker
+```
+
+CSV independiente generado en cada sesión:
+
+```text
+datos/<sesion>/trayectoria_agv_mapa.csv
+```
+
+Columnas principales:
+
+```text
+map_x,map_y,map_z,map_roll,map_pitch,map_yaw,distance_from_previous_m,distance_total_m
+```
+
+Parámetros/env vars útiles al arrancar `start_lidar_mapping.sh`:
+
+```bash
+TRAJECTORY_PUBLISH_RATE=2.0
+TRAJECTORY_MIN_DISTANCE=0.05
+TRAJECTORY_MAX_POINTS=10000
+```
+
+Comprobación rápida:
+
+```bash
+rosrun tf tf_echo map base_link
+rostopic echo -n 1 /agv_trajectory_path
+rostopic echo -n 1 /agv_trajectory_marker
 ```
 
 ## Fase 1: probar LilyGO por Bluetooth en el PC
@@ -211,6 +256,7 @@ gps_raw.jsonl
 doback.csv
 doback_raw.csv
 trayectoria_gps_doback.csv
+trayectoria_agv_mapa.csv
 manifest.json
 ```
 

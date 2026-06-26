@@ -13,7 +13,10 @@ from datetime import datetime
 
 import rospy
 import tf
+from geometry_msgs.msg import Point, PoseStamped
+from nav_msgs.msg import Path as RosPath
 from std_srvs.srv import Empty, EmptyResponse
+from visualization_msgs.msg import Marker
 
 try:
     import serial
@@ -115,6 +118,20 @@ MAP_FIELDS = [
     "doback_si",
     "doback_accmag",
 ]
+
+AGV_TRAJECTORY_FIELDS = [
+    "ros_time",
+    "recv_time_utc",
+    "map_x",
+    "map_y",
+    "map_z",
+    "map_roll",
+    "map_pitch",
+    "map_yaw",
+    "distance_from_previous_m",
+    "distance_total_m",
+]
+
 
 
 def utc_now():
@@ -270,6 +287,12 @@ class MetadataLogger(object):
         self.doback_baud = int(rospy.get_param("~doback_baud", 115200))
         self.doback_test_file = rospy.get_param("~doback_test_file", "")
         self.join_slop_sec = float(rospy.get_param("~join_slop_sec", 2.0))
+        self.trajectory_enable = rospy.get_param("~trajectory_enable", True)
+        self.trajectory_publish_rate = float(rospy.get_param("~trajectory_publish_rate", 2.0))
+        self.trajectory_min_distance = float(rospy.get_param("~trajectory_min_distance", 0.05))
+        self.trajectory_max_points = int(rospy.get_param("~trajectory_max_points", 10000))
+        self.trajectory_path_topic = rospy.get_param("~trajectory_path_topic", "/agv_trajectory_path")
+        self.trajectory_marker_topic = rospy.get_param("~trajectory_marker_topic", "/agv_trajectory_marker")
 
         self.lock = threading.Lock()
         self.shutdown_event = threading.Event()
@@ -281,11 +304,17 @@ class MetadataLogger(object):
         self.latest_gps = None
         self.latest_doback = None
         self.active_doback_port = ""
+        self.trajectory_points = []
+        self.trajectory_poses = []
+        self.trajectory_last_point = None
+        self.trajectory_distance_total = 0.0
+        self.trajectory_count = 0
 
         self.session_dir = self.resolve_metadata_dir()
         self.gps_csv_path = os.path.join(self.session_dir, "gps.csv")
         self.gps_raw_path = os.path.join(self.session_dir, "gps_raw.jsonl")
         self.map_track_path = os.path.join(self.session_dir, "trayectoria_gps_doback.csv")
+        self.agv_trajectory_path = os.path.join(self.session_dir, "trayectoria_agv_mapa.csv")
         self.manifest_path = os.path.join(self.session_dir, "manifest.json")
         self.doback_raw_path = os.path.join(self.session_dir, "doback_raw.csv")
         self.doback_stability_path = os.path.join(self.session_dir, "doback.csv")
@@ -302,6 +331,11 @@ class MetadataLogger(object):
         if os.path.getsize(self.map_track_path) == 0:
             self.map_writer.writeheader()
 
+        self.agv_trajectory_csv = open(self.agv_trajectory_path, "a")
+        self.agv_trajectory_writer = csv.DictWriter(self.agv_trajectory_csv, fieldnames=AGV_TRAJECTORY_FIELDS)
+        if os.path.getsize(self.agv_trajectory_path) == 0:
+            self.agv_trajectory_writer.writeheader()
+
         self.gps_raw = open(self.gps_raw_path, "a")
 
         self.doback_raw = open(self.doback_raw_path, "a")
@@ -313,6 +347,22 @@ class MetadataLogger(object):
         self.doback_writer = csv.DictWriter(self.doback_csv, fieldnames=DOBACK_STABILITY_FIELDS)
         if os.path.getsize(self.doback_stability_path) == 0:
             self.doback_writer.writeheader()
+
+        self.path_pub = rospy.Publisher(self.trajectory_path_topic, RosPath, queue_size=1, latch=True)
+        self.marker_pub = rospy.Publisher(self.trajectory_marker_topic, Marker, queue_size=1, latch=True)
+        self.trajectory_timer = None
+        if self.trajectory_enable:
+            period = 1.0 / self.trajectory_publish_rate if self.trajectory_publish_rate > 0.0 else 1.0
+            self.trajectory_timer = rospy.Timer(rospy.Duration(period), self.trajectory_timer_cb)
+            rospy.loginfo(
+                "AGV trajectory enabled: path=%s marker=%s frame=%s robot=%s rate=%.2fHz min_distance=%.3fm",
+                self.trajectory_path_topic,
+                self.trajectory_marker_topic,
+                self.target_frame,
+                self.robot_frame,
+                self.trajectory_publish_rate,
+                self.trajectory_min_distance,
+            )
 
         self.save_srv = rospy.Service("~save_metadata", Empty, self.save_service)
 
@@ -357,6 +407,7 @@ class MetadataLogger(object):
             "gps_csv": append_suffix(self.output_pcd, "_gps", ".csv"),
             "gps_raw_jsonl": append_suffix(self.output_pcd, "_gps_raw", ".jsonl"),
             "map_track_csv": append_suffix(self.output_pcd, "_map_track", ".csv"),
+            "agv_trajectory_csv": append_suffix(self.output_pcd, "_agv_trajectory", ".csv"),
             "doback_raw_csv": append_suffix(self.output_pcd, "_doback_raw", ".csv"),
             "doback_stability_csv": append_suffix(self.output_pcd, "_doback_stability", ".csv"),
             "manifest_json": append_suffix(self.output_pcd, "_session_manifest", ".json"),
@@ -618,8 +669,7 @@ class MetadataLogger(object):
                     "doback_accmag": doback.get("accmag", ""),
                 })
         try:
-            trans, rot = self.listener.lookupTransform(self.target_frame, self.robot_frame, rospy.Time(0))
-            roll, pitch, yaw = tf.transformations.euler_from_quaternion(rot)
+            trans, _rot, roll, pitch, yaw = self.lookup_robot_pose()
             row.update({
                 "map_x": trans[0],
                 "map_y": trans[1],
@@ -632,6 +682,104 @@ class MetadataLogger(object):
         except Exception:
             pass
         return row
+
+
+    def lookup_robot_pose(self):
+        trans, rot = self.listener.lookupTransform(self.target_frame, self.robot_frame, rospy.Time(0))
+        roll, pitch, yaw = tf.transformations.euler_from_quaternion(rot)
+        return trans, rot, roll, pitch, yaw
+
+    def point_distance(self, a, b):
+        dx = float(a[0]) - float(b[0])
+        dy = float(a[1]) - float(b[1])
+        dz = float(a[2]) - float(b[2])
+        return math.sqrt(dx * dx + dy * dy + dz * dz)
+
+    def trajectory_timer_cb(self, _event):
+        try:
+            trans, rot, roll, pitch, yaw = self.lookup_robot_pose()
+        except Exception as exc:
+            rospy.logwarn_throttle(10.0, "AGV trajectory waiting for TF %s -> %s: %s", self.target_frame, self.robot_frame, exc)
+            return
+
+        ros_time = rospy.Time.now()
+        point = (float(trans[0]), float(trans[1]), float(trans[2]))
+        with self.lock:
+            if self.trajectory_last_point is not None:
+                delta = self.point_distance(point, self.trajectory_last_point)
+                if delta < self.trajectory_min_distance:
+                    self.publish_trajectory_locked(ros_time)
+                    return
+            else:
+                delta = 0.0
+
+            self.trajectory_distance_total += delta
+            self.trajectory_last_point = point
+            self.trajectory_points.append(point)
+
+            pose = PoseStamped()
+            pose.header.stamp = ros_time
+            pose.header.frame_id = self.target_frame
+            pose.pose.position.x = point[0]
+            pose.pose.position.y = point[1]
+            pose.pose.position.z = point[2]
+            pose.pose.orientation.x = rot[0]
+            pose.pose.orientation.y = rot[1]
+            pose.pose.orientation.z = rot[2]
+            pose.pose.orientation.w = rot[3]
+            self.trajectory_poses.append(pose)
+
+            if self.trajectory_max_points > 0 and len(self.trajectory_points) > self.trajectory_max_points:
+                self.trajectory_points = self.trajectory_points[-self.trajectory_max_points:]
+                self.trajectory_poses = self.trajectory_poses[-self.trajectory_max_points:]
+
+            row = {
+                "ros_time": ros_time.to_sec(),
+                "recv_time_utc": utc_now(),
+                "map_x": point[0],
+                "map_y": point[1],
+                "map_z": point[2],
+                "map_roll": roll,
+                "map_pitch": pitch,
+                "map_yaw": yaw,
+                "distance_from_previous_m": delta,
+                "distance_total_m": self.trajectory_distance_total,
+            }
+            self.agv_trajectory_writer.writerow(row)
+            self.agv_trajectory_csv.flush()
+            self.trajectory_count += 1
+            self.publish_trajectory_locked(ros_time)
+
+        rospy.loginfo_throttle(5.0, "AGV trajectory points: %d total_distance=%.2fm", self.trajectory_count, self.trajectory_distance_total)
+
+    def publish_trajectory_locked(self, stamp):
+        path_msg = RosPath()
+        path_msg.header.stamp = stamp
+        path_msg.header.frame_id = self.target_frame
+        path_msg.poses = list(self.trajectory_poses)
+        self.path_pub.publish(path_msg)
+
+        marker = Marker()
+        marker.header.stamp = stamp
+        marker.header.frame_id = self.target_frame
+        marker.ns = "agv_trajectory"
+        marker.id = 0
+        marker.type = Marker.LINE_STRIP
+        marker.action = Marker.ADD
+        marker.pose.orientation.w = 1.0
+        marker.scale.x = 0.06
+        marker.color.r = 1.0
+        marker.color.g = 0.15
+        marker.color.b = 0.05
+        marker.color.a = 1.0
+        marker.points = []
+        for item in self.trajectory_points:
+            point = Point()
+            point.x = item[0]
+            point.y = item[1]
+            point.z = item[2] + 0.08
+            marker.points.append(point)
+        self.marker_pub.publish(marker)
 
     def save_service(self, _request):
         self.write_manifest()
@@ -653,6 +801,7 @@ class MetadataLogger(object):
                 "gps_csv": self.gps_csv_path,
                 "gps_raw_jsonl": self.gps_raw_path,
                 "map_track_csv": self.map_track_path,
+                "agv_trajectory_csv": self.agv_trajectory_path,
                 "doback_raw_csv": self.doback_raw_path,
                 "doback_stability_csv": self.doback_stability_path,
                 "manifest_json": self.manifest_path,
@@ -664,6 +813,14 @@ class MetadataLogger(object):
             "doback_baud": self.doback_baud,
             "doback_test_file": self.doback_test_file,
             "join_slop_sec": self.join_slop_sec,
+            "trajectory_enabled": self.trajectory_enable,
+            "trajectory_count": self.trajectory_count,
+            "trajectory_distance_total_m": self.trajectory_distance_total,
+            "trajectory_path_topic": self.trajectory_path_topic,
+            "trajectory_marker_topic": self.trajectory_marker_topic,
+            "trajectory_publish_rate": self.trajectory_publish_rate,
+            "trajectory_min_distance": self.trajectory_min_distance,
+            "trajectory_max_points": self.trajectory_max_points,
         }
         with open(self.manifest_path, "w") as handle:
             json.dump(manifest, handle, indent=2, sort_keys=True)
@@ -679,9 +836,15 @@ class MetadataLogger(object):
                 self.server_socket.close()
             except Exception:
                 pass
+        if self.trajectory_timer is not None:
+            try:
+                self.trajectory_timer.shutdown()
+            except Exception:
+                pass
         self.write_manifest()
         self.gps_csv.close()
         self.map_csv.close()
+        self.agv_trajectory_csv.close()
         self.gps_raw.close()
         self.doback_raw.close()
         self.doback_csv.close()

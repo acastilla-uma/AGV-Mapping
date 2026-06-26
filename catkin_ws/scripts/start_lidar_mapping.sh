@@ -61,6 +61,12 @@ GPS_ALLOWED_HOSTS="${GPS_ALLOWED_HOSTS:-100.93.178.118,127.0.0.1,::1}"
 GPS_REQUIRED="${GPS_REQUIRED:-false}"
 METADATA_ROBOT_FRAME="${METADATA_ROBOT_FRAME:-base_link}"
 METADATA_JOIN_SLOP_SEC="${METADATA_JOIN_SLOP_SEC:-2.0}"
+TRAJECTORY_ENABLE="${TRAJECTORY_ENABLE:-true}"
+TRAJECTORY_PUBLISH_RATE="${TRAJECTORY_PUBLISH_RATE:-2.0}"
+TRAJECTORY_MIN_DISTANCE="${TRAJECTORY_MIN_DISTANCE:-0.05}"
+TRAJECTORY_MAX_POINTS="${TRAJECTORY_MAX_POINTS:-10000}"
+TRAJECTORY_PATH_TOPIC="${TRAJECTORY_PATH_TOPIC:-/agv_trajectory_path}"
+TRAJECTORY_MARKER_TOPIC="${TRAJECTORY_MARKER_TOPIC:-/agv_trajectory_marker}"
 
 REALSENSE_DEPTH_WIDTH="${REALSENSE_DEPTH_WIDTH:-640}"
 REALSENSE_DEPTH_HEIGHT="${REALSENSE_DEPTH_HEIGHT:-480}"
@@ -206,7 +212,13 @@ if [ "$ENABLE_METADATA_LOGGER" = "true" ]; then
     gps_tcp_port:="$GPS_TCP_PORT" \
     gps_allowed_hosts:="$GPS_ALLOWED_HOSTS" \
     gps_required:="$GPS_REQUIRED" \
-    join_slop_sec:="$METADATA_JOIN_SLOP_SEC"
+    join_slop_sec:="$METADATA_JOIN_SLOP_SEC" \
+    trajectory_enable:="$TRAJECTORY_ENABLE" \
+    trajectory_publish_rate:="$TRAJECTORY_PUBLISH_RATE" \
+    trajectory_min_distance:="$TRAJECTORY_MIN_DISTANCE" \
+    trajectory_max_points:="$TRAJECTORY_MAX_POINTS" \
+    trajectory_path_topic:="$TRAJECTORY_PATH_TOPIC" \
+    trajectory_marker_topic:="$TRAJECTORY_MARKER_TOPIC"
   if ! wait_for_ros_node /mapping_metadata_logger 10; then
     echo "WARNING: mapping_metadata_logger did not stay alive after launch."
     echo "Metadata CSVs may be missing. Check: $LOG_DIR/metadata.log"
@@ -238,7 +250,12 @@ Metadata outputs:
   $METADATA_DIR/doback.csv
   $METADATA_DIR/doback_raw.csv
   $METADATA_DIR/trayectoria_gps_doback.csv
+  $METADATA_DIR/trayectoria_agv_mapa.csv
   $METADATA_DIR/manifest.json
+
+RViz trajectory topics:
+  $TRAJECTORY_PATH_TOPIC
+  $TRAJECTORY_MARKER_TOPIC
 
 PC LilyGO bridge:
   python $WORKSPACE/scripts/lilygo_ble_tcp_bridge.py --address CE:BA:33:E1:3A:39 --agv-host 100.123.78.14 --agv-port $GPS_TCP_PORT

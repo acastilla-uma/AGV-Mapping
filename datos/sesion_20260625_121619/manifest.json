@@ -1,0 +1,37 @@
+{
+  "active_doback_port": "/dev/ttyUSB0", 
+  "doback_baud": 115200, 
+  "doback_count": 390, 
+  "doback_enabled": true, 
+  "doback_port": "auto", 
+  "doback_test_file": "", 
+  "files": {
+    "doback_raw_csv": "/home/agilex/Documents/PhDAlex/AGV-Mapping/datos/sesion_20260625_121619/doback_raw.csv", 
+    "doback_stability_csv": "/home/agilex/Documents/PhDAlex/AGV-Mapping/datos/sesion_20260625_121619/doback.csv", 
+    "gps_csv": "/home/agilex/Documents/PhDAlex/AGV-Mapping/datos/sesion_20260625_121619/gps.csv", 
+    "gps_raw_jsonl": "/home/agilex/Documents/PhDAlex/AGV-Mapping/datos/sesion_20260625_121619/gps_raw.jsonl", 
+    "manifest_json": "/home/agilex/Documents/PhDAlex/AGV-Mapping/datos/sesion_20260625_121619/manifest.json", 
+    "map_track_csv": "/home/agilex/Documents/PhDAlex/AGV-Mapping/datos/sesion_20260625_121619/trayectoria_gps_doback.csv"
+  }, 
+  "gps_allowed_hosts": [
+    "100.93.178.118", 
+    "127.0.0.1"
+  ], 
+  "gps_count": 48, 
+  "gps_tcp_bind": "0.0.0.0", 
+  "gps_tcp_port": 29500, 
+  "join_slop_sec": 2.0, 
+  "legacy_file_names": {
+    "doback_raw_csv": "/tmp/lilygo_doback_real_doback_raw.csv", 
+    "doback_stability_csv": "/tmp/lilygo_doback_real_doback_stability.csv", 
+    "gps_csv": "/tmp/lilygo_doback_real_gps.csv", 
+    "gps_raw_jsonl": "/tmp/lilygo_doback_real_gps_raw.jsonl", 
+    "manifest_json": "/tmp/lilygo_doback_real_session_manifest.json", 
+    "map_track_csv": "/tmp/lilygo_doback_real_map_track.csv"
+  }, 
+  "metadata_dir": "/home/agilex/Documents/PhDAlex/AGV-Mapping/datos/sesion_20260625_121619", 
+  "output_pcd": "/tmp/lilygo_doback_real.pcd", 
+  "robot_frame": "base_link", 
+  "target_frame": "map", 
+  "time_utc": "2026-06-25T12:17:04.165Z"
+}

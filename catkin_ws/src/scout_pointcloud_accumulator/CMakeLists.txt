@@ -4,7 +4,10 @@ project(scout_pointcloud_accumulator)
 find_package(catkin REQUIRED COMPONENTS
   roscpp
   rospy
+  geometry_msgs
+  nav_msgs
   sensor_msgs
+  visualization_msgs
   pcl_ros
   pcl_conversions
   tf
@@ -16,7 +19,7 @@ find_package(catkin REQUIRED COMPONENTS
 find_package(PCL REQUIRED)
 
 catkin_package(
-  CATKIN_DEPENDS roscpp rospy sensor_msgs pcl_ros pcl_conversions tf tf2_ros tf2_sensor_msgs std_srvs
+  CATKIN_DEPENDS roscpp rospy geometry_msgs nav_msgs sensor_msgs visualization_msgs pcl_ros pcl_conversions tf tf2_ros tf2_sensor_msgs std_srvs
 )
 
 include_directories(

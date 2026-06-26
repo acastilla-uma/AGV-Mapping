@@ -17,6 +17,13 @@
   <arg name="doback_test_file" default="" />
   <arg name="join_slop_sec" default="2.0" />
 
+  <arg name="trajectory_enable" default="true" />
+  <arg name="trajectory_publish_rate" default="2.0" />
+  <arg name="trajectory_min_distance" default="0.05" />
+  <arg name="trajectory_max_points" default="10000" />
+  <arg name="trajectory_path_topic" default="/agv_trajectory_path" />
+  <arg name="trajectory_marker_topic" default="/agv_trajectory_marker" />
+
   <node pkg="scout_pointcloud_accumulator" type="mapping_metadata_logger.py"
         name="mapping_metadata_logger" output="screen">
     <param name="output_pcd" value="$(arg output_pcd)" />
@@ -34,5 +41,11 @@
     <param name="doback_baud" value="$(arg doback_baud)" />
     <param name="doback_test_file" value="$(arg doback_test_file)" />
     <param name="join_slop_sec" value="$(arg join_slop_sec)" />
+    <param name="trajectory_enable" value="$(arg trajectory_enable)" />
+    <param name="trajectory_publish_rate" value="$(arg trajectory_publish_rate)" />
+    <param name="trajectory_min_distance" value="$(arg trajectory_min_distance)" />
+    <param name="trajectory_max_points" value="$(arg trajectory_max_points)" />
+    <param name="trajectory_path_topic" value="$(arg trajectory_path_topic)" />
+    <param name="trajectory_marker_topic" value="$(arg trajectory_marker_topic)" />
   </node>
 </launch>
