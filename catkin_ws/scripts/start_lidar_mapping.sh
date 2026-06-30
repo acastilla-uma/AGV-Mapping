@@ -38,6 +38,11 @@ ENABLE_LIDAR="${ENABLE_LIDAR:-true}"
 ENABLE_CAMERA="${ENABLE_CAMERA:-true}"
 SAVE_LIDAR="${SAVE_LIDAR:-true}"
 SAVE_CAMERA="${SAVE_CAMERA:-true}"
+[ -n "${CAMERA_PARENT_FRAME+x}" ] && CAMERA_PARENT_FRAME_WAS_SET=true || true
+[ -n "${CAMERA_CHILD_FRAME+x}" ] && CAMERA_CHILD_FRAME_WAS_SET=true || true
+[ -n "${CAMERA_XYZ+x}" ] && CAMERA_XYZ_WAS_SET=true || true
+[ -n "${CAMERA_RPY+x}" ] && CAMERA_RPY_WAS_SET=true || true
+CAMERA_CALIBRATION_FILE="${CAMERA_CALIBRATION_FILE:-$ROS_ROOT_DIR/catkin_ws/src/scout_pointcloud_accumulator/config/camera_lidar_calibration.yaml}"
 CAMERA_NAME="${CAMERA_NAME:-camera}"
 CAMERA_PARENT_FRAME="${CAMERA_PARENT_FRAME:-base_link}"
 CAMERA_CHILD_FRAME="${CAMERA_CHILD_FRAME:-camera_link}"
@@ -48,6 +53,23 @@ TRANSFORM_TIMEOUT="${TRANSFORM_TIMEOUT:-0.5}"
 USE_LATEST_TF_ON_FAILURE="${USE_LATEST_TF_ON_FAILURE:-false}"
 LEGO_USE_IMU="${LEGO_USE_IMU:-false}"
 LEGO_LOCK_ROLL_PITCH="${LEGO_LOCK_ROLL_PITCH:-true}"
+
+if [ -n "$CAMERA_CALIBRATION_FILE" ]; then
+  if [ -f "$CAMERA_CALIBRATION_FILE" ]; then
+    eval "$(python "$WORKSPACE/src/scout_pointcloud_accumulator/scripts/camera_lidar_calibration_env.py" "$CAMERA_CALIBRATION_FILE")"
+    if [ -z "${CAMERA_PARENT_FRAME_WAS_SET:-}" ] && [ -n "${YAML_CAMERA_PARENT_FRAME:-}" ]; then CAMERA_PARENT_FRAME="$YAML_CAMERA_PARENT_FRAME"; fi
+    if [ -z "${CAMERA_CHILD_FRAME_WAS_SET:-}" ] && [ -n "${YAML_CAMERA_CHILD_FRAME:-}" ]; then CAMERA_CHILD_FRAME="$YAML_CAMERA_CHILD_FRAME"; fi
+    if [ -z "${CAMERA_XYZ_WAS_SET:-}" ] && [ -n "${YAML_CAMERA_XYZ:-}" ]; then CAMERA_XYZ="$YAML_CAMERA_XYZ"; fi
+    if [ -z "${CAMERA_RPY_WAS_SET:-}" ] && [ -n "${YAML_CAMERA_RPY:-}" ]; then CAMERA_RPY="$YAML_CAMERA_RPY"; fi
+    echo "Loaded camera calibration: $CAMERA_CALIBRATION_FILE"
+    echo "  CAMERA_PARENT_FRAME=$CAMERA_PARENT_FRAME"
+    echo "  CAMERA_CHILD_FRAME=$CAMERA_CHILD_FRAME"
+    echo "  CAMERA_XYZ=$CAMERA_XYZ"
+    echo "  CAMERA_RPY=$CAMERA_RPY"
+  else
+    echo "WARNING: CAMERA_CALIBRATION_FILE not found: $CAMERA_CALIBRATION_FILE"
+  fi
+fi
 
 ENABLE_METADATA_LOGGER="${ENABLE_METADATA_LOGGER:-true}"
 DOBACK_ENABLE="${DOBACK_ENABLE:-false}"

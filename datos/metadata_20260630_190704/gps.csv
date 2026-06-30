@@ -1,0 +1,1 @@
+ros_time,recv_time_utc,remote_host,latitud,longitud,altitud_m,satelites,hdop,fix_valido,esperando_fix,mensaje_gps,raw_hex,latitude,longitude,altitude,sats,fix_ok,waiting_for_fix

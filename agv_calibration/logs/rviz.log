@@ -1,0 +1,4 @@
+QObject::connect: Cannot queue arguments of type 'QVector<int>'
+(Make sure 'QVector<int>' is registered using qRegisterMetaType().)
+QObject::connect: Cannot queue arguments of type 'QVector<int>'
+(Make sure 'QVector<int>' is registered using qRegisterMetaType().)

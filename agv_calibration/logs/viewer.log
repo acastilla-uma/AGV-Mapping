@@ -1,0 +1,3 @@
+[WARN] [1782480797.476647]: LiDAR cloud waiting for TF base_link -> velodyne: Lookup would require extrapolation into the past.  Requested time 1782480797.268039703 but the earliest data is at time 1782480797.378533602, when looking up transform from frame [velodyne] to frame [base_link]
+[WARN] [1782481803.294923]: Camera cloud waiting for TF base_link -> camera_depth_optical_frame: publish() to a closed topic
+[INFO] [1782480797.260059]: Camera/LiDAR calibration viewer target=base_link lidar=/velodyne_points camera=/camera/depth/color/points

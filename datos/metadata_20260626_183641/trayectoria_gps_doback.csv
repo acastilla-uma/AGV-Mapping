@@ -1,0 +1,1 @@
+ros_time,recv_time_utc,map_x,map_y,map_z,map_roll,map_pitch,map_yaw,latitud,longitud,altitud_m,satelites,hdop,fix_valido,esperando_fix,mensaje_gps,latitude,longitude,altitude,sats,fix_ok,waiting_for_fix,gps_text,tf_ok,doback_ok,doback_age_sec,doback_ax,doback_ay,doback_az,doback_gx,doback_gy,doback_gz,doback_roll,doback_pitch,doback_yaw,doback_si,doback_accmag

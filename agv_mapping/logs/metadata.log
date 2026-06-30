@@ -1,0 +1,90 @@
+[INFO] [1782817636.841103]: AGV trajectory enabled: path=/agv_trajectory_path marker=/agv_trajectory_marker frame=map robot=base_link rate=2.00Hz min_distance=0.050m
+[INFO] [1782817636.863610]: GPS TCP metadata server listening on 0.0.0.0:29500
+[INFO] [1782817637.343993]: AGV trajectory points: 1 total_distance=0.00m
+[INFO] [1782817642.345832]: AGV trajectory points: 5 total_distance=0.29m
+[INFO] [1782817647.346614]: AGV trajectory points: 10 total_distance=0.60m
+[INFO] [1782817653.846266]: AGV trajectory points: 12 total_distance=0.72m
+[INFO] [1782817659.844713]: AGV trajectory points: 17 total_distance=1.02m
+[INFO] [1782817664.846236]: AGV trajectory points: 20 total_distance=1.24m
+[INFO] [1782817669.849913]: AGV trajectory points: 23 total_distance=1.43m
+[INFO] [1782817674.851189]: AGV trajectory points: 26 total_distance=1.64m
+[INFO] [1782817680.847520]: AGV trajectory points: 30 total_distance=1.90m
+[INFO] [1782817686.344496]: AGV trajectory points: 34 total_distance=2.13m
+[INFO] [1782817691.348125]: AGV trajectory points: 38 total_distance=2.45m
+[INFO] [1782817697.850613]: AGV trajectory points: 43 total_distance=2.73m
+[INFO] [1782817704.845575]: AGV trajectory points: 47 total_distance=2.97m
+[INFO] [1782817712.347731]: AGV trajectory points: 51 total_distance=3.21m
+[INFO] [1782817717.847957]: AGV trajectory points: 55 total_distance=3.48m
+[INFO] [1782817724.346823]: AGV trajectory points: 58 total_distance=3.69m
+[INFO] [1782817729.847289]: AGV trajectory points: 62 total_distance=3.91m
+[INFO] [1782817735.347158]: AGV trajectory points: 66 total_distance=4.14m
+[INFO] [1782817741.347190]: AGV trajectory points: 69 total_distance=4.30m
+[INFO] [1782817747.346228]: AGV trajectory points: 71 total_distance=4.42m
+[INFO] [1782817752.348535]: AGV trajectory points: 74 total_distance=4.60m
+[INFO] [1782817762.349497]: AGV trajectory points: 78 total_distance=4.82m
+[INFO] [1782817768.347787]: AGV trajectory points: 80 total_distance=4.95m
+[INFO] [1782817774.849036]: AGV trajectory points: 83 total_distance=5.15m
+[INFO] [1782817779.849049]: AGV trajectory points: 84 total_distance=5.20m
+[INFO] [1782817789.847352]: AGV trajectory points: 86 total_distance=5.31m
+[INFO] [1782817795.347794]: AGV trajectory points: 89 total_distance=5.47m
+[INFO] [1782817800.849034]: AGV trajectory points: 91 total_distance=5.59m
+[INFO] [1782817805.850007]: AGV trajectory points: 93 total_distance=5.71m
+[INFO] [1782817814.347927]: AGV trajectory points: 96 total_distance=5.87m
+[INFO] [1782817821.350056]: AGV trajectory points: 98 total_distance=5.97m
+[INFO] [1782817826.849011]: AGV trajectory points: 102 total_distance=6.20m
+[INFO] [1782817832.346300]: AGV trajectory points: 105 total_distance=6.39m
+[INFO] [1782817838.350417]: AGV trajectory points: 107 total_distance=6.50m
+[INFO] [1782817843.848435]: AGV trajectory points: 110 total_distance=6.67m
+[INFO] [1782817849.849479]: AGV trajectory points: 113 total_distance=6.83m
+[INFO] [1782817857.845190]: AGV trajectory points: 117 total_distance=7.08m
+[INFO] [1782817862.847728]: AGV trajectory points: 119 total_distance=7.20m
+[INFO] [1782817868.850602]: AGV trajectory points: 123 total_distance=7.45m
+[INFO] [1782817876.344899]: AGV trajectory points: 126 total_distance=7.61m
+[INFO] [1782817883.380148]: Metadata manifest saved: /home/agilex/Documents/PhDAlex/AGV-Mapping/datos/metadata_20260630_190704/manifest.json
+[INFO] [1782817883.680327]: Metadata manifest saved: /home/agilex/Documents/PhDAlex/AGV-Mapping/datos/metadata_20260630_190704/manifest.json
+... logging to /home/agilex/.ros/log/d4d4fdbe-7473-11f1-b73f-48b02d3c846d/roslaunch-xavier-11102.log
+Checking log directory for disk usage. This may take a while.
+Press Ctrl-C to interrupt
+Done checking log file disk usage. Usage is <1GB.
+]2;/home/agilex/Documents/PhDAlex/AGV-Mapping/catkin_ws/src/scout_pointcloud_accumulator/launch/mapping_metadata.launch
+[1mstarted roslaunch server http://xavier:35597/[0m
+
+SUMMARY
+========
+
+PARAMETERS
+ * /mapping_metadata_logger/doback_baud: 115200
+ * /mapping_metadata_logger/doback_enable: False
+ * /mapping_metadata_logger/doback_port: auto
+ * /mapping_metadata_logger/doback_required: False
+ * /mapping_metadata_logger/doback_test_file: 
+ * /mapping_metadata_logger/gps_allowed_hosts: 100.93.178.118,12...
+ * /mapping_metadata_logger/gps_required: False
+ * /mapping_metadata_logger/gps_tcp_bind: 0.0.0.0
+ * /mapping_metadata_logger/gps_tcp_enable: True
+ * /mapping_metadata_logger/gps_tcp_port: 29500
+ * /mapping_metadata_logger/join_slop_sec: 2.0
+ * /mapping_metadata_logger/metadata_dir: /home/agilex/Docu...
+ * /mapping_metadata_logger/output_pcd: /home/agilex/Docu...
+ * /mapping_metadata_logger/robot_frame: base_link
+ * /mapping_metadata_logger/target_frame: map
+ * /mapping_metadata_logger/trajectory_enable: True
+ * /mapping_metadata_logger/trajectory_marker_topic: /agv_trajectory_m...
+ * /mapping_metadata_logger/trajectory_max_points: 10000
+ * /mapping_metadata_logger/trajectory_min_distance: 0.05
+ * /mapping_metadata_logger/trajectory_path_topic: /agv_trajectory_path
+ * /mapping_metadata_logger/trajectory_publish_rate: 2.0
+ * /rosdistro: melodic
+ * /rosversion: 1.14.13
+
+NODES
+  /
+    mapping_metadata_logger (scout_pointcloud_accumulator/mapping_metadata_logger.py)
+
+[1mROS_MASTER_URI=http://localhost:11311[0m
+]2;/home/agilex/Documents/PhDAlex/AGV-Mapping/catkin_ws/src/scout_pointcloud_accumulator/launch/mapping_metadata.launch http://localhost:11311
+[1mprocess[mapping_metadata_logger-1]: started with pid [11295][0m
+[mapping_metadata_logger-1] killing on exit
+shutting down processing monitor...
+... shutting down processing monitor complete
+[1mdone[0m

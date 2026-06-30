@@ -1,0 +1,191 @@
+... logging to /home/agilex/.ros/log/93968d58-7163-11f1-9421-48b02d3c846d/roslaunch-xavier-4459.log
+Checking log directory for disk usage. This may take a while.
+Press Ctrl-C to interrupt
+Done checking log file disk usage. Usage is <1GB.
+]2;/home/agilex/Documents/PhDAlex/AGV-Mapping/catkin_ws/src/scout_pointcloud_accumulator/launch/realsense_mapping.launch
+[1mstarted roslaunch server http://xavier:35343/[0m
+
+SUMMARY
+========
+
+PARAMETERS
+ * /camera/realsense2_camera/accel_fps: -1
+ * /camera/realsense2_camera/accel_frame_id: camera_accel_frame
+ * /camera/realsense2_camera/accel_optical_frame_id: camera_accel_opti...
+ * /camera/realsense2_camera/align_depth: True
+ * /camera/realsense2_camera/aligned_depth_to_color_frame_id: camera_aligned_de...
+ * /camera/realsense2_camera/aligned_depth_to_fisheye1_frame_id: camera_aligned_de...
+ * /camera/realsense2_camera/aligned_depth_to_fisheye2_frame_id: camera_aligned_de...
+ * /camera/realsense2_camera/aligned_depth_to_fisheye_frame_id: camera_aligned_de...
+ * /camera/realsense2_camera/aligned_depth_to_infra1_frame_id: camera_aligned_de...
+ * /camera/realsense2_camera/aligned_depth_to_infra2_frame_id: camera_aligned_de...
+ * /camera/realsense2_camera/allow_no_texture_points: False
+ * /camera/realsense2_camera/base_frame_id: camera_link
+ * /camera/realsense2_camera/calib_odom_file: 
+ * /camera/realsense2_camera/clip_distance: -1.0
+ * /camera/realsense2_camera/color_fps: 6
+ * /camera/realsense2_camera/color_frame_id: camera_color_frame
+ * /camera/realsense2_camera/color_height: 480
+ * /camera/realsense2_camera/color_optical_frame_id: camera_color_opti...
+ * /camera/realsense2_camera/color_width: 640
+ * /camera/realsense2_camera/confidence_fps: -1
+ * /camera/realsense2_camera/confidence_height: -1
+ * /camera/realsense2_camera/confidence_width: -1
+ * /camera/realsense2_camera/depth_fps: 6
+ * /camera/realsense2_camera/depth_frame_id: camera_depth_frame
+ * /camera/realsense2_camera/depth_height: 480
+ * /camera/realsense2_camera/depth_optical_frame_id: camera_depth_opti...
+ * /camera/realsense2_camera/depth_width: 640
+ * /camera/realsense2_camera/device_type: 
+ * /camera/realsense2_camera/enable_accel: False
+ * /camera/realsense2_camera/enable_color: True
+ * /camera/realsense2_camera/enable_confidence: True
+ * /camera/realsense2_camera/enable_depth: True
+ * /camera/realsense2_camera/enable_fisheye1: False
+ * /camera/realsense2_camera/enable_fisheye2: False
+ * /camera/realsense2_camera/enable_fisheye: False
+ * /camera/realsense2_camera/enable_gyro: False
+ * /camera/realsense2_camera/enable_infra1: False
+ * /camera/realsense2_camera/enable_infra2: False
+ * /camera/realsense2_camera/enable_infra: False
+ * /camera/realsense2_camera/enable_pointcloud: True
+ * /camera/realsense2_camera/enable_pose: False
+ * /camera/realsense2_camera/enable_sync: False
+ * /camera/realsense2_camera/filters: 
+ * /camera/realsense2_camera/fisheye1_frame_id: camera_fisheye1_f...
+ * /camera/realsense2_camera/fisheye1_optical_frame_id: camera_fisheye1_o...
+ * /camera/realsense2_camera/fisheye2_frame_id: camera_fisheye2_f...
+ * /camera/realsense2_camera/fisheye2_optical_frame_id: camera_fisheye2_o...
+ * /camera/realsense2_camera/fisheye_fps: -1
+ * /camera/realsense2_camera/fisheye_frame_id: camera_fisheye_frame
+ * /camera/realsense2_camera/fisheye_height: -1
+ * /camera/realsense2_camera/fisheye_optical_frame_id: camera_fisheye_op...
+ * /camera/realsense2_camera/fisheye_width: -1
+ * /camera/realsense2_camera/gyro_fps: -1
+ * /camera/realsense2_camera/gyro_frame_id: camera_gyro_frame
+ * /camera/realsense2_camera/gyro_optical_frame_id: camera_gyro_optic...
+ * /camera/realsense2_camera/imu_optical_frame_id: camera_imu_optica...
+ * /camera/realsense2_camera/infra1_frame_id: camera_infra1_frame
+ * /camera/realsense2_camera/infra1_optical_frame_id: camera_infra1_opt...
+ * /camera/realsense2_camera/infra2_frame_id: camera_infra2_frame
+ * /camera/realsense2_camera/infra2_optical_frame_id: camera_infra2_opt...
+ * /camera/realsense2_camera/infra_fps: -1
+ * /camera/realsense2_camera/infra_height: -1
+ * /camera/realsense2_camera/in[0m[ INFO] [1782480794.745986670]: Initializing nodelet with 8 worker threads.[0m
+[0m[ INFO] [1782480794.992167098]: RealSense ROS v2.2.22[0m
+[0m[ INFO] [1782480794.992245852]: Built with LibRealSense v2.50.0[0m
+[0m[ INFO] [1782480794.992282237]: Running with LibRealSense v2.50.0[0m
+[0m[ INFO] [1782480795.070808291]:  [0m
+[0m[ INFO] [1782480795.425945855]: Device with serial number 135522077961 was found.
+[0m
+[0m[ INFO] [1782480795.426035138]: Device with physical ID 2-4.1.4-7 was found.[0m
+[0m[ INFO] [1782480795.426075555]: Device with name Intel RealSense D435 was found.[0m
+[0m[ INFO] [1782480795.427407307]: Device with port number 2-4.1.4 was found.[0m
+[0m[ INFO] [1782480795.428730866]: Device USB type: 3.2[0m
+[0m[ INFO] [1782480795.428841429]: Resetting device...[0m
+[0m[ INFO] [1782480801.549126081]:  [0m
+[0m[ INFO] [1782480801.667091870]: Device with serial number 135522077961 was found.
+[0m
+[0m[ INFO] [1782480801.667166465]: Device with physical ID 2-4.1.4-8 was found.[0m
+[0m[ INFO] [1782480801.667192705]: Device with name Intel RealSense D435 was found.[0m
+[0m[ INFO] [1782480801.668240545]: Device with port number 2-4.1.4 was found.[0m
+[0m[ INFO] [1782480801.668297602]: Device USB type: 3.2[0m
+[0m[ INFO] [1782480801.676217038]: getParameters...[0m
+[0m[ INFO] [1782480802.014505812]: setupDevice...[0m
+[0m[ INFO] [1782480802.014584407]: JSON file is not provided[0m
+[0m[ INFO] [1782480802.014630136]: ROS Node Namespace: camera[0m
+[0m[ INFO] [1782480802.014685722]: Device Name: Intel RealSense D435[0m
+[0m[ INFO] [1782480802.014729435]: Device Serial No: 135522077961[0m
+[0m[ INFO] [1782480802.014767324]: Device physical port: 2-4.1.4-8[0m
+[0m[ INFO] [1782480802.014834078]: Device FW version: 05.17.00.10[0m
+[0m[ INFO] [1782480802.014888768]: Device Product ID: 0x0B07[0m
+[0m[ INFO] [1782480802.014920961]: Enable PointCloud: On[0m
+[0m[ INFO] [1782480802.014980291]: Align Depth: On[0m
+[0m[ INFO] [1782480802.015006979]: Sync Mode: On[0m
+[0m[ INFO] [1782480802.015116871]: Device Sensors: [0m
+[0m[ INFO] [1782480802.125698376]: Stereo Module was found.[0m
+[0m[ INFO] [1782480802.168834222]: RGB Camera was found.[0m
+[0m[ INFO] [1782480802.168956017]: (Confidence, 0) sensor isn't supported by current device! -- Skipping...[0m
+[0m[ INFO] [1782480802.169015219]: Add Filter: pointcloud[0m
+[0m[ INFO] [1782480802.170875115]: num_filters: 1[0m
+[0m[ INFO] [1782480802.170940908]: Setting Dynamic reconfig parameters.[0m
+hwmon command 0x80( 5 0 0 0 ) failed (response -7= HW not ready)
+hwmon command 0x80( 5 0 0 0 ) failed (response -7= HW not ready)
+hwmon command 0x80( 5 0 0 0 ) failed (response -7= HW not ready)
+hwmon command 0x80( 5 0 0 0 ) failed (response -7= HW not ready)
+[0m[ INFO] [1782480806.574230208]: Done Setting Dynamic reconfig parameters.[0m
+[0m[ INFO] [1782480806.575660075]: depth stream is enabled - width: 640, height: 480, fps: 6, Format: Z16[0m
+[0m[ INFO] [1782480806.577463969]: color stream is enabled - width: 640, height: 480, fps: 6, Format: RGB8[0m
+[0m[ INFO] [1782480806.580029517]: setupPublishers...[0m
+[0m[ INFO] [1782480806.589546793]: Expected frequency for depth = 6.00000[0m
+[0m[ INFO] [1782480806.712880454]: Expected frequency for color = 6.00000[0m
+[0m[ INFO] [1782480806.795595656]: Expected frequency for aligned_depth_to_color = 6.00000[0m
+[0m[ INFO] [1782480806.874195248]: setupStreams...[0m
+[0m[ INFO] [1782480807.048567455]: insert Depth to Stereo Module[0m
+[0m[ INFO] [1782480807.048781605]: insert Color to RGB Camera[0m
+ 26/06 21:33:27,177 WARNING [547138564480] (messenger-libusb.cpp:42) control_transfer returned error, index: 768, error: Resource temporarily unavailable, number: 11
+[33m[ WARN] [1782480807.573965263]: [0m
+[0m[ INFO] [1782480807.228714426]: SELECTED BASE:Depth, 0[0m
+[0m[ INFO] [1782480807.276596749]: RealSense Node Is Up![0m
+ 26/06 21:33:27,575 WARNING [547138564480] (messenger-libusb.cpp:42) control_transfer returned error, index: 768, error: Resource temporarily unavailable, number: 11
+ 26/06 21:33:27,626 WARNING [547138564480] (messenger-libusb.cpp:42) control_transfer returned error, index: 768, error: Resource temporarily unavailable, number: 11
+[0m[ INFO] [1782480807.643567082]: publishing unordered pointcloud.[0m
+ 26/06 21:33:27,676 WARNING [547138564480] (messenger-libusb.cpp:42) control_transfer returned error, index: 768, error: Resource temporarily unavailable, number: 11
+ 26/06 21:33:27,727 WARNING [547138564480] (messenger-libusb.cpp:42) control_transfer returned error, index: 768, error: Resource temporarily unavailable, number: 11
+ 26/06 21:33:27,777 WARNING [547138564480] (messenger-libusb.cpp:42) control_transfer returned error, index: 768, error: Resource temporarily unavailable, number: 11
+ 26/06 21:33:27,827 WARNING [547138564480] (messenger-libusb.cpp:42) control_transfer returned error, index: 768, error: Resource temporarily unavailable, number: 11
+ 26/06 21:33:27,878 WARNING [547138564480] (messenger-libusb.cpp:42) control_transfer returned error, index: 768, error: Resource temporarily unavailable, number: 11
+ 26/06 21:33:28,061 WARNING [547138564480] (messenger-libusb.cpp:42) control_transfer returned error, index: 768, error: Resource temporarily unavailable, number: 11
+ 26/06 21:33:28,112 WARNING [547138564480] (messenger-libusb.cpp:42) control_transfer returned error, index: 768, error: Resource temporarily unavailable, number: 11
+[33m[ WARN] [1782480808.579475978]: Hardware Notification:Right MIPI error,1.78248e+12,Error,Hardware Error[0m
+[33m[ WARN] [1782480809.580501280]: Hardware Notification:Right MIPI error,1.78248e+12,Error,Hardware Error[0m
+[33m[ WARN] [1782480863.589937869]: No stream match for pointcloud chosen texture Process - Color[0m
+[33m[ WARN] [1782480936.918910464]: No stream match for pointcloud chosen texture Process - Color[0m
+[33m[ WARN] [1782481010.249788616]: No stream match for pointcloud chosen texture Process - Color[0m
+[33m[ WARN] [1782481083.570866760]: No stream match for pointcloud chosen texture Process - Color[0m
+[33m[ WARN] [1782481156.896893273]: No stream match for pointcloud chosen texture Process - Color[0m
+[33m[ WARN] [1782481230.223510105]: No stream match for pointcloud chosen texture Process - Color[0m
+[33m[ WARN] [1782481303.548319297]: No stream match for pointcloud chosen texture Process - Color[0m
+[33m[ WARN] [1782481377.148103450]: No stream match for pointcloud chosen texture Process - Color[0m
+[33m[ WARN] [1782481450.447900945]: No stream match for pointcloud chosen texture Process - Color[0m
+[33m[ WARN] [1782481523.758850327]: No stream match for pointcloud chosen texture Process - Color[0m
+[33m[ WARN] [1782481597.085674408]: No stream match for pointcloud chosen texture Process - Color[0m
+ 26/06 21:47:21,427 WARNING [547138564480] (messenger-libusb.cpp:42) control_transfer returned error, index: 768, error: Resource temporarily unavailable, number: 11
+[33m[ WARN] [1782481670.410493689]: No stream match for pointcloud chosen texture Process - Color[0m
+[33m[ WARN] [1782481743.900427073]: No stream match for pointcloud chosen texture Process - Color[0m
+fra_rgb: False
+ * /camera/realsense2_camera/infra_width: -1
+ * /camera/realsense2_camera/initial_reset: True
+ * /camera/realsense2_camera/json_file_path: 
+ * /camera/realsense2_camera/linear_accel_cov: 0.01
+ * /camera/realsense2_camera/odom_frame_id: camera_odom_frame
+ * /camera/realsense2_camera/ordered_pc: False
+ * /camera/realsense2_camera/pointcloud_texture_index: 0
+ * /camera/realsense2_camera/pointcloud_texture_stream: RS2_STREAM_COLOR
+ * /camera/realsense2_camera/pose_frame_id: camera_pose_frame
+ * /camera/realsense2_camera/pose_optical_frame_id: camera_pose_optic...
+ * /camera/realsense2_camera/publish_odom_tf: True
+ * /camera/realsense2_camera/publish_tf: True
+ * /camera/realsense2_camera/rosbag_filename: 
+ * /camera/realsense2_camera/serial_no: 
+ * /camera/realsense2_camera/tf_publish_rate: 0.0
+ * /camera/realsense2_camera/topic_odom_in: odom_in
+ * /camera/realsense2_camera/unite_imu_method: 
+ * /camera/realsense2_camera/usb_port_id: 
+ * /rosdistro: melodic
+ * /rosversion: 1.14.13
+
+NODES
+  /camera/
+    realsense2_camera (nodelet/nodelet)
+    realsense2_camera_manager (nodelet/nodelet)
+
+[1mROS_MASTER_URI=http://localhost:11311[0m
+]2;/home/agilex/Documents/PhDAlex/AGV-Mapping/catkin_ws/src/scout_pointcloud_accumulator/launch/realsense_mapping.launch http://localhost:11311
+[1mprocess[camera/realsense2_camera_manager-1]: started with pid [4850][0m
+[1mprocess[camera/realsense2_camera-2]: started with pid [4851][0m
+[camera/realsense2_camera-2] killing on exit
+[camera/realsense2_camera_manager-1] killing on exit
+shutting down processing monitor...
+... shutting down processing monitor complete
+[1mdone[0m

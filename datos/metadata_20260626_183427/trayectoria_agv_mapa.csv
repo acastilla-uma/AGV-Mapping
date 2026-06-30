@@ -1,0 +1,1 @@
+ros_time,recv_time_utc,map_x,map_y,map_z,map_roll,map_pitch,map_yaw,distance_from_previous_m,distance_total_m

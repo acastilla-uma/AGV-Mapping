@@ -1,0 +1,48 @@
+{
+  "active_doback_port": "", 
+  "doback_baud": 115200, 
+  "doback_count": 0, 
+  "doback_enabled": false, 
+  "doback_port": "auto", 
+  "doback_test_file": "", 
+  "files": {
+    "agv_trajectory_csv": "/home/agilex/Documents/PhDAlex/AGV-Mapping/datos/metadata_20260630_190704/trayectoria_agv_mapa.csv", 
+    "doback_raw_csv": "/home/agilex/Documents/PhDAlex/AGV-Mapping/datos/metadata_20260630_190704/doback_raw.csv", 
+    "doback_stability_csv": "/home/agilex/Documents/PhDAlex/AGV-Mapping/datos/metadata_20260630_190704/doback.csv", 
+    "gps_csv": "/home/agilex/Documents/PhDAlex/AGV-Mapping/datos/metadata_20260630_190704/gps.csv", 
+    "gps_raw_jsonl": "/home/agilex/Documents/PhDAlex/AGV-Mapping/datos/metadata_20260630_190704/gps_raw.jsonl", 
+    "manifest_json": "/home/agilex/Documents/PhDAlex/AGV-Mapping/datos/metadata_20260630_190704/manifest.json", 
+    "map_track_csv": "/home/agilex/Documents/PhDAlex/AGV-Mapping/datos/metadata_20260630_190704/trayectoria_gps_doback.csv"
+  }, 
+  "gps_allowed_hosts": [
+    "100.93.178.118", 
+    "127.0.0.1", 
+    "::1"
+  ], 
+  "gps_count": 0, 
+  "gps_tcp_bind": "0.0.0.0", 
+  "gps_tcp_port": 29500, 
+  "join_slop_sec": 2.0, 
+  "legacy_file_names": {
+    "agv_trajectory_csv": "/home/agilex/Documents/PhDAlex/AGV-Mapping/maps/map_20260630_190704_agv_trajectory.csv", 
+    "doback_raw_csv": "/home/agilex/Documents/PhDAlex/AGV-Mapping/maps/map_20260630_190704_doback_raw.csv", 
+    "doback_stability_csv": "/home/agilex/Documents/PhDAlex/AGV-Mapping/maps/map_20260630_190704_doback_stability.csv", 
+    "gps_csv": "/home/agilex/Documents/PhDAlex/AGV-Mapping/maps/map_20260630_190704_gps.csv", 
+    "gps_raw_jsonl": "/home/agilex/Documents/PhDAlex/AGV-Mapping/maps/map_20260630_190704_gps_raw.jsonl", 
+    "manifest_json": "/home/agilex/Documents/PhDAlex/AGV-Mapping/maps/map_20260630_190704_session_manifest.json", 
+    "map_track_csv": "/home/agilex/Documents/PhDAlex/AGV-Mapping/maps/map_20260630_190704_map_track.csv"
+  }, 
+  "metadata_dir": "/home/agilex/Documents/PhDAlex/AGV-Mapping/datos/metadata_20260630_190704", 
+  "output_pcd": "/home/agilex/Documents/PhDAlex/AGV-Mapping/maps/map_20260630_190704.pcd", 
+  "robot_frame": "base_link", 
+  "target_frame": "map", 
+  "time_utc": "2026-06-30T11:11:23.679Z", 
+  "trajectory_count": 127, 
+  "trajectory_distance_total_m": 7.6707172183369545, 
+  "trajectory_enabled": true, 
+  "trajectory_marker_topic": "/agv_trajectory_marker", 
+  "trajectory_max_points": 10000, 
+  "trajectory_min_distance": 0.05, 
+  "trajectory_path_topic": "/agv_trajectory_path", 
+  "trajectory_publish_rate": 2.0
+}

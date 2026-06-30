@@ -402,3 +402,52 @@ El nodo C++ principal esta en:
 ```text
 catkin_ws/src/scout_pointcloud_accumulator/src/accumulator.cpp
 ```
+
+## Calibracion manual camara-LiDAR
+
+Modo dedicado para alinear manualmente RealSense y LiDAR sin usar el acumulador ni LeGO-LOAM como dependencia principal. Muestra nubes instantaneas en RViz y permite ajustar la TF de la camara desde terminal.
+
+Arrancar calibracion:
+
+```bash
+cd /home/agilex/Documents/PhDAlex/AGV-Mapping/catkin_ws
+./scripts/start_camera_lidar_calibration.sh
+```
+
+Tópicos publicados para RViz:
+
+```text
+/calibration/lidar_points
+/calibration/camera_points
+```
+
+Comandos del calibrador:
+
+```text
+x+ x- y+ y- z+ z-
+roll+ roll- pitch+ pitch- yaw+ yaw-
+step 0.005
+rstep 0.1deg
+show
+reset
+save
+quit
+```
+
+Archivo de calibracion por defecto:
+
+```text
+catkin_ws/src/scout_pointcloud_accumulator/config/camera_lidar_calibration.yaml
+```
+
+Usar una calibracion guardada en el mapeo normal:
+
+```bash
+CAMERA_CALIBRATION_FILE=/ruta/camera_lidar_calibration.yaml ./scripts/start_lidar_mapping.sh
+```
+
+El modo calibracion no llama al acumulador, no guarda PCD y no crea metadata GPS/DOBACK. Si el topico LiDAR raw no es `/velodyne_points`, arrancar indicando el topico real:
+
+```bash
+CALIBRATION_LIDAR_TOPIC=/mi/topico_lidar ./scripts/start_camera_lidar_calibration.sh
+```

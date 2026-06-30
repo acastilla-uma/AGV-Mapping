@@ -1,0 +1,7 @@
+parent_frame: base_link
+child_frame: camera_link
+xyz: [0.160000, 0.000000, 0.200000]
+rpy: [0.000000000, 0.000000000, 0.000000000]
+rpy_degrees: [0.000000, 0.000000, 0.000000]
+created_utc: "example"
+notes: "Ejemplo de calibracion camara-LiDAR. Copiar a camera_lidar_calibration.yaml o guardar desde el calibrador."
