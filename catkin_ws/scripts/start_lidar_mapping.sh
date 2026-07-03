@@ -42,7 +42,10 @@ SAVE_CAMERA="${SAVE_CAMERA:-true}"
 [ -n "${CAMERA_CHILD_FRAME+x}" ] && CAMERA_CHILD_FRAME_WAS_SET=true || true
 [ -n "${CAMERA_XYZ+x}" ] && CAMERA_XYZ_WAS_SET=true || true
 [ -n "${CAMERA_RPY+x}" ] && CAMERA_RPY_WAS_SET=true || true
-CAMERA_CALIBRATION_FILE="${CAMERA_CALIBRATION_FILE:-$ROS_ROOT_DIR/catkin_ws/src/scout_pointcloud_accumulator/config/camera_lidar_calibration.yaml}"
+CAMERA_CALIBRATION_FILE="${CAMERA_CALIBRATION_FILE:-$WORKSPACE/src/scout_pointcloud_accumulator/config/camera_lidar_calibration.yaml}"
+if [ -d "$CAMERA_CALIBRATION_FILE" ]; then
+  CAMERA_CALIBRATION_FILE="${CAMERA_CALIBRATION_FILE%/}/camera_lidar_calibration.yaml"
+fi
 CAMERA_NAME="${CAMERA_NAME:-camera}"
 CAMERA_PARENT_FRAME="${CAMERA_PARENT_FRAME:-base_link}"
 CAMERA_CHILD_FRAME="${CAMERA_CHILD_FRAME:-camera_link}"
