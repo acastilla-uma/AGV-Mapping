@@ -35,6 +35,9 @@ install(TARGETS accumulator_node
 catkin_install_python(PROGRAMS
   scripts/mapping_metadata_logger.py
   scripts/static_transform_rpy.py
+  scripts/camera_lidar_calibrator.py
+  scripts/camera_lidar_calibration_viewer.py
+  scripts/camera_lidar_calibration_env.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 

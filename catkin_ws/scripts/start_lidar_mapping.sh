@@ -7,6 +7,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 WORKSPACE="${WORKSPACE:-$(cd "$SCRIPT_DIR/.." && pwd)}"
+CATKIN_WS_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 ROS_ROOT_DIR="$(cd "$WORKSPACE/.." && pwd)"
 OUTPUT_DIR="${1:-${OUTPUT_DIR:-$ROS_ROOT_DIR/maps}}"
 RUN_DIR="${RUN_DIR:-$ROS_ROOT_DIR/agv_mapping}"
@@ -37,6 +38,27 @@ ENABLE_LIDAR="${ENABLE_LIDAR:-true}"
 ENABLE_CAMERA="${ENABLE_CAMERA:-true}"
 SAVE_LIDAR="${SAVE_LIDAR:-true}"
 SAVE_CAMERA="${SAVE_CAMERA:-true}"
+[ -n "${CAMERA_PARENT_FRAME+x}" ] && CAMERA_PARENT_FRAME_WAS_SET=true || true
+[ -n "${CAMERA_CHILD_FRAME+x}" ] && CAMERA_CHILD_FRAME_WAS_SET=true || true
+[ -n "${CAMERA_XYZ+x}" ] && CAMERA_XYZ_WAS_SET=true || true
+[ -n "${CAMERA_RPY+x}" ] && CAMERA_RPY_WAS_SET=true || true
+DEFAULT_CAMERA_CALIBRATION_FILE="$CATKIN_WS_DIR/calibration/camera_lidar_calibration.yaml"
+CAMERA_CALIBRATION_FILE="${CAMERA_CALIBRATION_FILE:-$DEFAULT_CAMERA_CALIBRATION_FILE}"
+
+# Accept a workspace/calibration directory as well as a complete YAML path.
+if [ -d "$CAMERA_CALIBRATION_FILE" ]; then
+  if [ -f "${CAMERA_CALIBRATION_FILE%/}/calibration/camera_lidar_calibration.yaml" ]; then
+    CAMERA_CALIBRATION_FILE="${CAMERA_CALIBRATION_FILE%/}/calibration/camera_lidar_calibration.yaml"
+  elif [ -f "${CAMERA_CALIBRATION_FILE%/}/camera_lidar_calibration.yaml" ]; then
+    CAMERA_CALIBRATION_FILE="${CAMERA_CALIBRATION_FILE%/}/camera_lidar_calibration.yaml"
+  else
+    CAMERA_CALIBRATION_FILE="$DEFAULT_CAMERA_CALIBRATION_FILE"
+  fi
+elif [ ! -f "$CAMERA_CALIBRATION_FILE" ] && [ -f "$DEFAULT_CAMERA_CALIBRATION_FILE" ]; then
+  echo "WARNING: requested calibration file not found: $CAMERA_CALIBRATION_FILE"
+  echo "Using repository calibration: $DEFAULT_CAMERA_CALIBRATION_FILE"
+  CAMERA_CALIBRATION_FILE="$DEFAULT_CAMERA_CALIBRATION_FILE"
+fi
 CAMERA_NAME="${CAMERA_NAME:-camera}"
 CAMERA_PARENT_FRAME="${CAMERA_PARENT_FRAME:-base_link}"
 CAMERA_CHILD_FRAME="${CAMERA_CHILD_FRAME:-camera_link}"
@@ -47,6 +69,18 @@ TRANSFORM_TIMEOUT="${TRANSFORM_TIMEOUT:-0.5}"
 USE_LATEST_TF_ON_FAILURE="${USE_LATEST_TF_ON_FAILURE:-false}"
 LEGO_USE_IMU="${LEGO_USE_IMU:-false}"
 LEGO_LOCK_ROLL_PITCH="${LEGO_LOCK_ROLL_PITCH:-true}"
+
+if [ -f "$CAMERA_CALIBRATION_FILE" ]; then
+  eval "$(python "$CATKIN_WS_DIR/src/scout_pointcloud_accumulator/scripts/camera_lidar_calibration_env.py" "$CAMERA_CALIBRATION_FILE")"
+  [ -n "${CAMERA_PARENT_FRAME_WAS_SET:-}" ] || CAMERA_PARENT_FRAME="${YAML_CAMERA_PARENT_FRAME:-$CAMERA_PARENT_FRAME}"
+  [ -n "${CAMERA_CHILD_FRAME_WAS_SET:-}" ] || CAMERA_CHILD_FRAME="${YAML_CAMERA_CHILD_FRAME:-$CAMERA_CHILD_FRAME}"
+  [ -n "${CAMERA_XYZ_WAS_SET:-}" ] || CAMERA_XYZ="${YAML_CAMERA_XYZ:-$CAMERA_XYZ}"
+  [ -n "${CAMERA_RPY_WAS_SET:-}" ] || CAMERA_RPY="${YAML_CAMERA_RPY:-$CAMERA_RPY}"
+  echo "Loaded camera calibration: $CAMERA_CALIBRATION_FILE"
+else
+  echo "WARNING: camera calibration file not found: $CAMERA_CALIBRATION_FILE"
+  echo "Script directory: $SCRIPT_DIR"
+fi
 
 ENABLE_METADATA_LOGGER="${ENABLE_METADATA_LOGGER:-true}"
 DOBACK_ENABLE="${DOBACK_ENABLE:-false}"

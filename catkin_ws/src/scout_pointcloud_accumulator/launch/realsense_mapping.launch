@@ -15,6 +15,7 @@
   <arg name="pointcloud_texture_index" default="0" />
   <arg name="allow_no_texture_points" default="false" />
   <arg name="initial_reset" default="true" />
+  <arg name="enable_pointcloud" default="false" />
 
   <include file="$(find realsense2_camera)/launch/rs_camera.launch">
     <arg name="camera" value="$(arg camera)" />
@@ -23,7 +24,7 @@
     <arg name="device_type" value="$(arg device_type)" />
     <arg name="enable_depth" value="true" />
     <arg name="enable_color" value="true" />
-    <arg name="enable_pointcloud" value="false" />
+    <arg name="enable_pointcloud" value="$(arg enable_pointcloud)" />
     <arg name="pointcloud_texture_stream" value="$(arg pointcloud_texture_stream)" />
     <arg name="pointcloud_texture_index" value="$(arg pointcloud_texture_index)" />
     <arg name="allow_no_texture_points" value="$(arg allow_no_texture_points)" />

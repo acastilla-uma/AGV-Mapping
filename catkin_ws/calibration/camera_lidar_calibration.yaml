@@ -1,0 +1,7 @@
+parent_frame: base_link
+child_frame: camera_link
+xyz: [0.160000, 0.040000, 0.200000]
+rpy: [0.000000000, 0.000000000, 0.100000000]
+rpy_degrees: [0.000000, 0.000000, 5.729578]
+created_utc: "2026-06-26T13:49:31.006Z"
+notes: ""
