@@ -2,7 +2,7 @@
 
 Wiki técnica del sistema de mapeo 3D para un AGV Scout. El proyecto integra un LiDAR Velodyne VLP-16, una Intel RealSense D435, LeGO-LOAM y un acumulador propio sobre ROS Melodic para generar mapas PCD LiDAR, RGB-D y fusionados.
 
-> Esta guía describe el árbol actual. El pipeline PCD está implementado, pero la integración opcional de GPS/DOBACK está incompleta; consulte [Limitaciones conocidas](#limitaciones-conocidas).
+> Esta guía describe el árbol actual del pipeline PCD.
 
 ## Índice
 
@@ -79,13 +79,17 @@ El código específico del proyecto se concentra en [`scout_pointcloud_accumulat
 
 ### Cámara
 
-Por defecto, el acumulador reconstruye XYZRGB con:
+Por defecto, el acumulador consume la nube XYZRGB nativa:
+
+- `/camera/depth/color/points`
+
+La ruta alternativa por profundidad alineada usa:
 
 - `/camera/aligned_depth_to_color/image_raw`
 - `/camera/color/image_raw`
 - `/camera/color/camera_info`
 
-También admite `/camera/depth/color/points`. Los puntos se limitan por rango, se transforman a `map`, se submuestrean y se incorporan a la nube RGB.
+Los puntos se limitan por rango, se transforman a `map`, se submuestrean y se incorporan a la nube RGB.
 
 ### Transformaciones
 
@@ -131,7 +135,7 @@ catkin_make --pkg lego_loam scout_pointcloud_accumulator
 source devel/setup.bash
 ```
 
-Para compilar todos los paquetes, sustituya el comando por `catkin_make`. Una compilación limpia del paquete propio está actualmente afectada por la referencia al logger ausente descrita en [Limitaciones conocidas](#limitaciones-conocidas).
+Para compilar todos los paquetes, sustituya el comando por `catkin_make`.
 
 ## Uso
 
@@ -141,23 +145,23 @@ Los comandos parten de la raíz del repositorio.
 
 ```bash
 cd catkin_ws
-ENABLE_METADATA_LOGGER=false ./scripts/start_lidar_mapping.sh
+./scripts/start_lidar_mapping.sh
 ```
 
-El valor anterior desactiva la integración incompleta de metadatos. Por defecto, los mapas se escriben en `../maps`, los logs en `../agv_mapping/logs` y los PID en `../agv_mapping/pids`.
+Por defecto, los mapas se escriben en `../maps`, los logs en `../agv_mapping/logs` y los PID en `../agv_mapping/pids`.
 
 Variantes:
 
 ```bash
 # Sin RViz
-ENABLE_METADATA_LOGGER=false RVIZ=false ./scripts/start_lidar_mapping.sh
+RVIZ=false ./scripts/start_lidar_mapping.sh
 
 # Solo LiDAR o solo cámara en los archivos de salida
-ENABLE_METADATA_LOGGER=false SAVE_LIDAR=true SAVE_CAMERA=false ./scripts/start_lidar_mapping.sh
-ENABLE_METADATA_LOGGER=false SAVE_LIDAR=false SAVE_CAMERA=true ./scripts/start_lidar_mapping.sh
+SAVE_LIDAR=true SAVE_CAMERA=false ./scripts/start_lidar_mapping.sh
+SAVE_LIDAR=false SAVE_CAMERA=true ./scripts/start_lidar_mapping.sh
 
 # Directorio de salida explícito
-ENABLE_METADATA_LOGGER=false ./scripts/start_lidar_mapping.sh /ruta/a/mapas
+./scripts/start_lidar_mapping.sh /ruta/a/mapas
 ```
 
 ### Guardar y detener
@@ -194,7 +198,14 @@ cd catkin_ws
 | Variable | Valor inicial | Efecto |
 | --- | --- | --- |
 | `TARGET_FRAME` | `map` | Frame común de acumulación. |
+| `CAMERA_VISUALIZATION_FRAME` | `camera_depth_optical_frame` | Frame de la nube instantánea; permite ver la cámara sin depender de la odometría LiDAR. |
+| `RVIZ_FIXED_FRAME` | `camera_depth_optical_frame` | Frame inicial de RViz; use `map` si la TF global ya está disponible al arrancar. |
 | `LIDAR_TOPIC` | `/registered_cloud` | Entrada LiDAR registrada. |
+| `LIDAR_RAW_TOPIC` | `/velodyne_points` | Entrada LiDAR instantánea y topic usado para validar paquetes al arrancar. |
+| `LIDAR_DEVICE_IP` | `192.168.8.201` | Dirección del VLP-16 aceptada por el driver. |
+| `LIDAR_HOST_IP` | `192.168.8.174` | Destino configurado en el VLP-16; debe estar asignado al Xavier. |
+| `LIDAR_DATA_PORT` | `2368` | Puerto UDP de datos del VLP-16. |
+| `LIDAR_READY_TIMEOUT` | `15` s | Espera máxima de paquetes LiDAR antes de abortar con diagnóstico de red. |
 | `ENABLE_LIDAR`, `ENABLE_CAMERA` | `true`, `true` | Habilita cada fuente. |
 | `SAVE_LIDAR`, `SAVE_CAMERA` | `true`, `true` | Controla los PCD generados. |
 | `LIDAR_VOXEL_SIZE` | `0.05` m | Resolución del mapa LiDAR. |
@@ -206,6 +217,11 @@ cd catkin_ws
 | `CAMERA_CALIBRATION_FILE` | YAML del paquete | Extrínseca de cámara. |
 | `TRANSFORM_TIMEOUT` | `0.5` s | Espera máxima de TF. |
 | `USE_LATEST_TF_ON_FAILURE` | `false` | Usa la última TF como fallback; puede ocultar fallos temporales. |
+| `REALSENSE_INITIAL_RESET` | `false` | Evita reiniciar la cámara en cada arranque; actívelo sólo para recuperación explícita. |
+| `CAMERA_READY_SAMPLE_MESSAGES` | `4` | Mensajes consecutivos exigidos para considerar estable una nube de cámara. |
+| `CAMERA_READY_SAMPLE_TIMEOUT_SEC` | `5` s | Tiempo máximo para recibir esa muestra; tolera el arranque del suscriptor sin aceptar flujos detenidos. |
+| `REALSENSE_READY_TIMEOUT` | `30` s | Límite para validar depth, color y CameraInfo. |
+| `CAMERA_OUTPUT_READY_TIMEOUT` | `30` s | Límite para validar `/camera/colored_points` tras arrancar el acumulador. |
 | `LEGO_USE_IMU` | `false` | Activa la IMU de LeGO-LOAM. |
 | `LEGO_LOCK_ROLL_PITCH` | `true` | Limita deriva de roll/pitch. |
 
@@ -274,8 +290,6 @@ tail -f agv_mapping/logs/accumulator.log
 
 ## Limitaciones conocidas
 
-- `start_lidar_mapping.sh`, `save_accumulated_map.sh` y `stop_lidar_mapping.sh` contemplan `mapping_metadata.launch` y `/mapping_metadata_logger`, pero el launch y `mapping_metadata_logger.py` no existen en el árbol actual. `gps_lilygo_tcp_bridge.py` también está ausente.
-- [`CMakeLists.txt`](catkin_ws/src/scout_pointcloud_accumulator/CMakeLists.txt) todavía intenta instalar `scripts/mapping_metadata_logger.py`; una compilación limpia puede fallar hasta restaurarlo o retirar esa entrada.
 - [`view_latest_pcd.sh`](catkin_ws/scripts/view_latest_pcd.sh) usa `/mnt/ros/maps` como ruta histórica si no recibe un argumento; desde `catkin_ws`, use `../maps`.
 - La TF `base_link → velodyne` y los valores iniciales de cámara deben validarse físicamente antes de considerar el resultado métricamente calibrado.
 - No hay tests unitarios específicos del acumulador. La verificación completa requiere sensores reales o una grabación ROS reproducible.

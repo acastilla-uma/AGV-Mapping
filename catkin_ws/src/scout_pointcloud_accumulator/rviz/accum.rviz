@@ -69,7 +69,7 @@ Visualization Manager:
       Size (Pixels): 2
       Size (m): 0.02500000037252903
       Style: Points
-      Topic: /registered_cloud
+      Topic: /velodyne_points
       Unreliable: false
       Use Fixed Frame: true
       Use rainbow: true

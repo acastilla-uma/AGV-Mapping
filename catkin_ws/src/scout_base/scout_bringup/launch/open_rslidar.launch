@@ -3,11 +3,15 @@
     <arg name="enable_laserscan" default="true" />
     <arg name="enable_rf2o" default="false" />
     <arg name="publish_robot_description" default="false" />
+    <arg name="device_ip" default="192.168.8.201" />
+    <arg name="port" default="2368" />
     <!--<include file="$(find serial_imu)/launch/imu_msg.launch">
     </include>-->
     <!--<include file="$(find ydlidar_ros)/launch/G4.launch" />-->
     <!--<include file="$(find lslidar_n301_decoder)/launch/lslidar_n301.launch" />-->
-    <include file="$(find velodyne_pointcloud)/launch/VLP16_points.launch">  
+    <include file="$(find velodyne_pointcloud)/launch/VLP16_points.launch">
+      <arg name="device_ip" value="$(arg device_ip)" />
+      <arg name="port" value="$(arg port)" />
     </include>
 
     <include if="$(arg enable_laserscan)" file="$(find pointcloud_to_laserscan)/launch/point_to_scan.launch">

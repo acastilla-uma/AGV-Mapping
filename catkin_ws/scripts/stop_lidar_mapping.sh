@@ -20,20 +20,13 @@ if rosnode list 2>/dev/null | grep -qx "/accumulator_node"; then
   fi
 fi
 
-if rosnode list 2>/dev/null | grep -qx "/mapping_metadata_logger"; then
-  echo "Saving mapping metadata before shutdown..."
-  if ! timeout 30s rosservice call /mapping_metadata_logger/save_metadata "{}" >/dev/null 2>&1; then
-    echo "WARNING: save_metadata did not complete before shutdown; continuing stop."
-  fi
-fi
-
 if [ ! -f "$PID_FILE" ]; then
   echo "No PID file found. Will still try to stop known ROS mapping nodes."
 else
   tac "$PID_FILE" | while read -r pid name _; do
     if [ -n "${pid:-}" ] && kill -0 "$pid" 2>/dev/null; then
       echo "Stopping $name pid=$pid"
-      kill "$pid" 2>/dev/null || true
+      kill -- "-$pid" 2>/dev/null || kill "$pid" 2>/dev/null || true
     fi
   done
 
@@ -42,7 +35,7 @@ else
   tac "$PID_FILE" | while read -r pid name _; do
     if [ -n "${pid:-}" ] && kill -0 "$pid" 2>/dev/null; then
       echo "Force stopping $name pid=$pid"
-      kill -9 "$pid" 2>/dev/null || true
+      kill -9 -- "-$pid" 2>/dev/null || kill -9 "$pid" 2>/dev/null || true
     fi
   done
 
@@ -53,7 +46,6 @@ fi
 # roslaunch may have exited while nodelets stayed alive. Kill known mapping nodes too.
 for node in \
   /accumulator_node \
-  /mapping_metadata_logger \
   /base_link_to_realsense \
   /camera/realsense2_camera \
   /camera/realsense2_camera_manager \

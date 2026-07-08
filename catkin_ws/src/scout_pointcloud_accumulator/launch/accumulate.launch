@@ -12,6 +12,8 @@
   <arg name="enable_lidar" default="true" />
   <arg name="enable_camera" default="false" />
   <arg name="target_frame" default="map" />
+  <arg name="camera_visualization_frame" default="camera_depth_optical_frame" />
+  <arg name="rviz_fixed_frame" default="$(arg camera_visualization_frame)" />
   <arg name="voxel_size" default="0.05" />
   <arg name="lidar_voxel_size" default="0.05" />
   <arg name="camera_voxel_size" default="0.05" />
@@ -51,6 +53,7 @@
     <param name="enable_lidar" value="$(arg enable_lidar)" />
     <param name="enable_camera" value="$(arg enable_camera)" />
     <param name="target_frame" value="$(arg target_frame)" />
+    <param name="camera_visualization_frame" value="$(arg camera_visualization_frame)" />
     <param name="voxel_size" value="$(arg voxel_size)" />
     <param name="lidar_voxel_size" value="$(arg lidar_voxel_size)" />
     <param name="camera_voxel_size" value="$(arg camera_voxel_size)" />
@@ -68,5 +71,6 @@
     <param name="save_camera" value="$(arg save_camera)" />
   </node>
 
-  <node if="$(arg rviz)" pkg="rviz" type="rviz" name="rviz" args="-d $(find scout_pointcloud_accumulator)/rviz/accum.rviz" output="screen"/>
+  <node if="$(arg rviz)" pkg="rviz" type="rviz" name="rviz"
+        args="-f $(arg rviz_fixed_frame) -d $(find scout_pointcloud_accumulator)/rviz/accum.rviz" output="screen"/>
 </launch>

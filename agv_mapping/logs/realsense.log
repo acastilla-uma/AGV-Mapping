@@ -1,9 +1,9 @@
-... logging to /home/agilex/.ros/log/5a72522e-79f0-11f1-aa30-48b02d3c846d/roslaunch-xavier-26562.log
+... logging to /home/agilex/.ros/log/b9e5276e-7a0d-11f1-86a2-48b02d3c846d/roslaunch-xavier-24463.log
 Checking log directory for disk usage. This may take a while.
 Press Ctrl-C to interrupt
 Done checking log file disk usage. Usage is <1GB.
 ]2;/home/agilex/Documents/PhDAlex/AGV-Mapping/catkin_ws/src/scout_pointcloud_accumulator/launch/realsense_mapping.launch
-[1mstarted roslaunch server http://xavier:43273/[0m
+[1mstarted roslaunch server http://xavier:37249/[0m
 
 SUMMARY
 ========
@@ -12,7 +12,7 @@ PARAMETERS
  * /camera/realsense2_camera/accel_fps: -1
  * /camera/realsense2_camera/accel_frame_id: camera_accel_frame
  * /camera/realsense2_camera/accel_optical_frame_id: camera_accel_opti...
- * /camera/realsense2_camera/align_depth: True
+ * /camera/realsense2_camera/align_depth: False
  * /camera/realsense2_camera/aligned_depth_to_color_frame_id: camera_aligned_de...
  * /camera/realsense2_camera/aligned_depth_to_fisheye1_frame_id: camera_aligned_de...
  * /camera/realsense2_camera/aligned_depth_to_fisheye2_frame_id: camera_aligned_de...
@@ -48,7 +48,7 @@ PARAMETERS
  * /camera/realsense2_camera/enable_infra1: False
  * /camera/realsense2_camera/enable_infra2: False
  * /camera/realsense2_camera/enable_infra: False
- * /camera/realsense2_camera/enable_pointcloud: False
+ * /camera/realsense2_camera/enable_pointcloud: True
  * /camera/realsense2_camera/enable_pose: False
  * /camera/realsense2_camera/enable_sync: False
  * /camera/realsense2_camera/filters: 
@@ -71,25 +71,92 @@ PARAMETERS
  * /camera/realsense2_camera/infra2_optical_frame_id: camera_infra2_opt...
  * /camera/realsense2_camera/infra_fps: -1
  * /camera/realsense2_camera/infra_height: -1
- * /camera/realsense2_camera/[0m[ INFO] [1783423842.880416287]: Initializing nodelet with 8 worker threads.[0m
-[0m[ INFO] [1783423843.111846110]: RealSense ROS v2.2.22[0m
-[0m[ INFO] [1783423843.111914177]: Built with LibRealSense v2.50.0[0m
-[0m[ INFO] [1783423843.112003558]: Running with LibRealSense v2.50.0[0m
-[0m[ INFO] [1783423843.173327298]:  [0m
- 07/07 19:30:43,189 ERROR [547490861440] (handle-libusb.h:100) failed to claim usb interface: 0, error: RS2_USB_STATUS_BUSY
-[33m[ WARN] [1783423843.190899418]: Device 1/1 failed with exception: failed to set power state[0m
-[31m[ERROR] [1783423843.191026465]: The requested device with  is NOT found. Will Try again.[0m
- 07/07 19:30:43,189 ERROR [547516039552] (sensor.cpp:572) acquire_power failed: failed to set power state
- 07/07 19:30:43,190 WARNING [547516039552] (rs.cpp:310) null pointer passed for argument "device"
-[0m[ INFO] [1783423849.224531271]:  [0m
- 07/07 19:30:49,244 ERROR [547499254144] (handle-libusb.h:100) failed to claim usb interface: 0, error: RS2_USB_STATUS_BUSY
-[33m[ WARN] [1783423849.245389841]: Device 1/1 failed with exception: failed to set power state[0m
-[31m[ERROR] [1783423849.245493431]: The requested device with  is NOT found. Will Try again.[0m
- 07/07 19:30:49,244 ERROR [547516039552] (sensor.cpp:572) acquire_power failed: failed to set power state
- 07/07 19:30:49,245 WARNING [547516039552] (rs.cpp:310) null pointer passed for argument "device"
-[0m[ INFO] [1783423855.269499055]:  [0m
- 07/07 19:30:55,284 ERROR [547272782208] (handle-libusb.h:100) failed to claim usb interface: 0, error: RS2_USB_STATUS_BUSY
-[33m[ WARN] [1783423855.285953194]: Device 1/1 failed with exception: failed to set power state[0m
-[31m[ERROR] [1783423855.286040143]: The requested device with  is NOT found. Will Try again.[0m
- 07/07 19:30:55,284 ERROR [547516039552] (sensor.cpp:572) acquire_power failed: failed to set power state
- 07/07 19:30:55,285 WARNING [547516039552] (rs.cpp:310) null pointer passed for argument "device"
+ * /camera/realsense2_camera/[33m[ WARN] [1783508278.520971212]: Param '/camera/rgb_camera/power_line_frequency' has value 3 that is not in the enum { {50Hz: 1} {60Hz: 2} {Disabled: 0} }. Removing this parameter from dynamic reconfigure options.[0m
+[33m[ WARN] [1783508279.169622640]: [0m
+[0m[ INFO] [1783508276.198607012]: Initializing nodelet with 8 worker threads.[0m
+[0m[ INFO] [1783508278.061465781]: RealSense ROS v2.2.22[0m
+[0m[ INFO] [1783508278.061543098]: Built with LibRealSense v2.57.6[0m
+[0m[ INFO] [1783508278.061592093]: Running with LibRealSense v2.57.6[0m
+[0m[ INFO] [1783508278.106437319]:  [0m
+[0m[ INFO] [1783508278.111940302]: Device with serial number 135522077961 was found.
+[0m
+[0m[ INFO] [1783508278.112053461]: Device with physical ID /sys/devices/3610000.xhci/usb2/2-4/2-4.1/2-4.1.4/2-4.1.4:1.0/video4linux/video0 was found.[0m
+[0m[ INFO] [1783508278.112125721]: Device with name Intel RealSense D435 was found.[0m
+[0m[ INFO] [1783508278.113241724]: Device with port number 2-4.1.4 was found.[0m
+[0m[ INFO] [1783508278.113329569]: Device USB type: 3.2[0m
+[0m[ INFO] [1783508278.117806411]: getParameters...[0m
+[0m[ INFO] [1783508278.378045435]: setupDevice...[0m
+[0m[ INFO] [1783508278.378150305]: JSON file is not provided[0m
+[0m[ INFO] [1783508278.378208517]: ROS Node Namespace: camera[0m
+[0m[ INFO] [1783508278.378282985]: Device Name: Intel RealSense D435[0m
+[0m[ INFO] [1783508278.378322668]: Device Serial No: 135522077961[0m
+[0m[ INFO] [1783508278.378368462]: Device physical port: /sys/devices/3610000.xhci/usb2/2-4/2-4.1/2-4.1.4/2-4.1.4:1.0/video4linux/video0[0m
+[0m[ INFO] [1783508278.378408081]: Device FW version: 5.17.0.10[0m
+[0m[ INFO] [1783508278.378451347]: Device Product ID: 0x0B07[0m
+[0m[ INFO] [1783508278.378486293]: Enable PointCloud: On[0m
+[0m[ INFO] [1783508278.378512471]: Align Depth: Off[0m
+[0m[ INFO] [1783508278.378537368]: Sync Mode: On[0m
+[0m[ INFO] [1783508278.378634366]: Device Sensors: [0m
+[0m[ INFO] [1783508278.384072609]: Stereo Module was found.[0m
+[0m[ INFO] [1783508278.393424205]: RGB Camera was found.[0m
+[0m[ INFO] [1783508278.393558101]: (Confidence, 0) sensor isn't supported by current device! -- Skipping...[0m
+[0m[ INFO] [1783508278.393650491]: Add Filter: pointcloud[0m
+[0m[ INFO] [1783508278.393908874]: num_filters: 1[0m
+[0m[ INFO] [1783508278.393947724]: Setting Dynamic reconfig parameters.[0m
+[0m[ INFO] [1783508278.550590989]: Done Setting Dynamic reconfig parameters.[0m
+[0m[ INFO] [1783508278.551947358]: depth stream is enabled - width: 640, height: 480, fps: 6, Format: Z16[0m
+[0m[ INFO] [1783508278.553132869]: color stream is enabled - width: 640, height: 480, fps: 6, Format: RGB8[0m
+[0m[ INFO] [1783508278.553237163]: setupPublishers...[0m
+[0m[ INFO] [1783508278.561865036]: Expected frequency for depth = 6.00000[0m
+[0m[ INFO] [1783508278.670666096]: Expected frequency for color = 6.00000[0m
+[0m[ INFO] [1783508278.765603165]: setupStreams...[0m
+[0m[ INFO] [1783508278.767022193]: insert Depth to Stereo Module[0m
+[0m[ INFO] [1783508278.767209948]: insert Color to RGB Camera[0m
+[0m[ INFO] [1783508278.774420233]: SELECTED BASE:Depth, 0[0m
+[0m[ INFO] [1783508278.809592628]: RealSense Node Is Up![0m
+[0m[ INFO] [1783508283.597848842]: publishing unordered pointcloud.[0m
+ 08/07 18:59:00,877 ERROR [547365036416] (ds-options.cpp:93) Asic Temperature value is not valid!
+ 08/07 18:59:01,878 ERROR [547365036416] (ds-options.cpp:93) Asic Temperature value is not valid!
+ 08/07 18:59:02,879 ERROR [547365036416] (ds-options.cpp:93) Asic Temperature value is not valid!
+ 08/07 18:59:18,895 ERROR [547365036416] (ds-options.cpp:93) Asic Temperature value is not valid!
+ 08/07 18:59:19,896 ERROR [547365036416] (ds-options.cpp:93) Asic Temperature value is not valid!
+ 08/07 18:59:20,897 ERROR [547365036416] (ds-options.cpp:93) Asic Temperature value is not valid!
+ 08/07 18:59:39,914 ERROR [547365036416] (ds-options.cpp:93) Asic Temperature value is not valid!
+ 08/07 18:59:40,915 ERROR [547365036416] (ds-options.cpp:93) Asic Temperature value is not valid!
+ 08/07 18:59:41,916 ERROR [547365036416] (ds-options.cpp:93) Asic Temperature value is not valid!
+infra_rgb: False
+ * /camera/realsense2_camera/infra_width: -1
+ * /camera/realsense2_camera/initial_reset: False
+ * /camera/realsense2_camera/json_file_path: 
+ * /camera/realsense2_camera/linear_accel_cov: 0.01
+ * /camera/realsense2_camera/odom_frame_id: camera_odom_frame
+ * /camera/realsense2_camera/ordered_pc: False
+ * /camera/realsense2_camera/pointcloud_texture_index: 0
+ * /camera/realsense2_camera/pointcloud_texture_stream: RS2_STREAM_COLOR
+ * /camera/realsense2_camera/pose_frame_id: camera_pose_frame
+ * /camera/realsense2_camera/pose_optical_frame_id: camera_pose_optic...
+ * /camera/realsense2_camera/publish_odom_tf: True
+ * /camera/realsense2_camera/publish_tf: True
+ * /camera/realsense2_camera/rosbag_filename: 
+ * /camera/realsense2_camera/serial_no: 
+ * /camera/realsense2_camera/tf_publish_rate: 0.0
+ * /camera/realsense2_camera/topic_odom_in: odom_in
+ * /camera/realsense2_camera/unite_imu_method: 
+ * /camera/realsense2_camera/usb_port_id: 
+ * /rosdistro: melodic
+ * /rosversion: 1.14.13
+
+NODES
+  /camera/
+    realsense2_camera (nodelet/nodelet)
+    realsense2_camera_manager (nodelet/nodelet)
+
+[1mROS_MASTER_URI=http://localhost:11311[0m
+]2;/home/agilex/Documents/PhDAlex/AGV-Mapping/catkin_ws/src/scout_pointcloud_accumulator/launch/realsense_mapping.launch http://localhost:11311
+[1mprocess[camera/realsense2_camera_manager-1]: started with pid [24588][0m
+[1mprocess[camera/realsense2_camera-2]: started with pid [24589][0m
+[camera/realsense2_camera-2] killing on exit
+[camera/realsense2_camera_manager-1] killing on exit
+shutting down processing monitor...
+... shutting down processing monitor complete
+[1mdone[0m

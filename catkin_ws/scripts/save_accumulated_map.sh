@@ -9,9 +9,3 @@ if [ -f "$WORKSPACE/devel/setup.bash" ]; then
 fi
 
 rosservice call /accumulator_node/save_accumulated "{}"
-
-if rosnode list 2>/dev/null | grep -qx "/mapping_metadata_logger"; then
-  rosservice call /mapping_metadata_logger/save_metadata "{}"
-else
-  echo "WARNING: /mapping_metadata_logger is not running; only PCD files were saved."
-fi

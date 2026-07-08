@@ -1,4 +1,11 @@
-[0m[ INFO] [1783423840.905839789]: Initializing nodelet with 8 worker threads.[0m
+[0m[ INFO] [1783508272.045738619]: Initializing nodelet with 8 worker threads.[0m
+[0m[ INFO] [1783508272.182974176]: Velodyne VLP-16 rotating at 600 RPM[0m
+[0m[ INFO] [1783508272.185054459]: publishing 76 packets per scan[0m
+[0m[ INFO] [1783508272.201172890]: Cut at specific angle feature deactivated.[0m
+[0m[ INFO] [1783508272.241793131]: Reconfigure Request[0m
+[0m[ INFO] [1783508272.250261859]: expected frequency: 9.921 (Hz)[0m
+[0m[ INFO] [1783508272.266314718]: Only accepting packets from IP address: 192.168.8.201[0m
+[0m[ INFO] [1783508272.266405667]: Opening UDP socket: port 2368[0m
 0.000 2.304 4.608 6.912 9.216 11.520 13.824 16.128 18.432 20.736 23.040 25.344 27.648 29.952 32.256 34.560 55.296 57.600 59.904 62.208 64.512 66.816 69.120 71.424 73.728 76.032 78.336 80.640 82.944 85.248 87.552 89.856 
 110.592 112.896 115.200 117.504 119.808 122.112 124.416 126.720 129.024 131.328 133.632 135.936 138.240 140.544 142.848 145.152 165.888 168.192 170.496 172.800 175.104 177.408 179.712 182.016 184.320 186.624 188.928 191.232 193.536 195.840 198.144 200.448 
 221.184 223.488 225.792 228.096 230.400 232.704 235.008 237.312 239.616 241.920 244.224 246.528 248.832 251.136 253.440 255.744 276.480 278.784 281.088 283.392 285.696 288.000 290.304 292.608 294.912 297.216 299.520 301.824 304.128 306.432 308.736 311.040 
@@ -11,13 +18,101 @@
 995.328 997.632 999.936 1002.240 1004.544 1006.848 1009.152 1011.456 1013.760 1016.064 1018.368 1020.672 1022.976 1025.280 1027.584 1029.888 1050.624 1052.928 1055.232 1057.536 1059.840 1062.144 1064.448 1066.752 1069.056 1071.360 1073.664 1075.968 1078.272 1080.576 1082.880 1085.184 
 1105.920 1108.224 1110.528 1112.832 1115.136 1117.440 1119.744 1122.048 1124.352 1126.656 1128.960 1131.264 1133.568 1135.872 1138.176 1140.480 1161.216 1163.520 1165.824 1168.128 1170.432 1172.736 1175.040 1177.344 1179.648 1181.952 1184.256 1186.560 1188.864 1191.168 1193.472 1195.776 
 1216.512 1218.816 1221.120 1223.424 1225.728 1228.032 1230.336 1232.640 1234.944 1237.248 1239.552 1241.856 1244.160 1246.464 1248.768 1251.072 1271.808 1274.112 1276.416 1278.720 1281.024 1283.328 1285.632 1287.936 1290.240 1292.544 1294.848 1297.152 1299.456 1301.760 1304.064 1306.368 
-[0m[ INFO] [1783423840.989437312]: correction angles: /home/agilex/Documents/PhDAlex/AGV-Mapping/catkin_ws/src/velodyne/velodyne_pointcloud/params/VLP16db.yaml[0m
-[0m[ INFO] [1783423840.998047123]: laser_ring[ 0] =  0, angle = -0.261799[0m
-[0m[ INFO] [1783423840.998111606]: laser_ring[ 2] =  1, angle = -0.226893[0m
-[0m[ INFO] [1783423840.998138264]: laser_ring[ 4] =  2, angle = -0.191986[0m
-[0m[ INFO] [1783423840.998162681]: laser_ring[ 6] =  3, angle = -0.157080[0m
-[0m[ INFO] [1783423840.998187579]: laser_ring[ 8] =  4, angle = -0.122173[0m
-[0m[ INFO] [1783423840.998210780]: laser_ring[10] =  5, angle = -0.087266[0m
-[0m[ INFO] [1783423840.998238845]: laser_ring[12] =  6, angle = -0.052360[0m
-[0m[ INFO] [1783423840.998272767]: laser_ring[14] =  7, angle = -0.017453[0m
-[0m[ INFO] [1783423840.998310337]: laser_ring[ 1] =  8, angle = +0.017453[33m[ WARN] [1783423845.198287761]: Packet containing angle overflow, first angle: 35983 second angle: 23[0m
+[0m[ INFO] [1783508272.303971902]: correction angles: /home/agilex/Documents/PhDAlex/AGV-Mapping/catkin_ws/src/velodyne/velodyne_pointcloud/params/VLP16db.yaml[0m
+[0m[ INFO] [1783508272.312824429]: laser_ring[ 0] =  0, angle = -0.261799[0m
+[0m[ INFO] [1783508272.312892273]: laser_ring[ 2] =  1, angle = -0.226893[0m
+[0m[ INFO] [1783508272.[33m[ WARN] [1783508273.177525726]: Packet containing angle overflow, first angle: 35985 second angle: 25[0m
+[33m[ WARN] [1783508333.185873887]: Packet containing angle overflow, first angle: 35988 second angle: 28[0m
+[33m[ WARN] [1783508393.198204937]: Packet containing angle overflow, first angle: 35985 second angle: 25[0m
+312918482]: laser_ring[ 4] =  2, angle = -0.191986[0m
+[0m[ INFO] [1783508272.313031865]: laser_ring[ 6] =  3, angle = -0.157080[0m
+[0m[ INFO] [1783508272.313072219]: laser_ring[ 8] =  4, angle = -0.122173[0m
+[0m[ INFO] [1783508272.313099005]: laser_ring[10] =  5, angle = -0.087266[0m
+[0m[ INFO] [1783508272.313150016]: laser_ring[12] =  6, angle = -0.052360[0m
+[0m[ INFO] [1783508272.313190658]: laser_ring[14] =  7, angle = -0.017453[0m
+[0m[ INFO] [1783508272.313234853]: laser_ring[ 1] =  8, angle = +0.017453[0m
+[0m[ INFO] [1783508272.313282792]: laser_ring[ 3] =  9, angle = +0.052360[0m
+[0m[ INFO] [1783508272.313341227]: laser_ring[ 5] = 10, angle = +0.087266[0m
+[0m[ INFO] [1783508272.313378157]: laser_ring[ 7] = 11, angle = +0.122173[0m
+[0m[ INFO] [1783508272.313410799]: laser_ring[ 9] = 12, angle = +0.157080[0m
+[0m[ INFO] [1783508272.313440881]: laser_ring[11] = 13, angle = +0.191986[0m
+[0m[ INFO] [1783508272.313473459]: laser_ring[13] = 14, angle = +0.226893[0m
+[0m[ INFO] [1783508272.313510933]: laser_ring[15] = 15, angle = +0.261799[0m
+[0m[ INFO] [1783508272.313934575]: Number of lasers: 16.[0m
+[0m[ INFO] [1783508272.376468887]: Reconfigure request.[0m
+[0m[ INFO] [1783508272.376604127]: Target frame ID now: [0m
+[0m[ INFO] [1783508272.376657122]: Fixed frame ID now: [0m
+[0m[ INFO] [1783508272.376749351]: Initialized container with min_range: 0.4, max_range: 100, target_frame: , fixed_frame: , init_width: 0, init_height: 1, is_dense: 1, scans_per_packet: 384[0m
+... logging to /home/agilex/.ros/log/b9e5276e-7a0d-11f1-86a2-48b02d3c846d/roslaunch-xavier-24070.log
+Checking log directory for disk usage. This may take a while.
+Press Ctrl-C to interrupt
+Done checking log file disk usage. Usage is <1GB.
+]2;/home/agilex/Documents/PhDAlex/AGV-Mapping/catkin_ws/src/scout_base/scout_bringup/launch/open_rslidar.launch
+[1mstarted roslaunch server http://xavier:38919/[0m
+
+SUMMARY
+========
+
+PARAMETERS
+ * /pointcloud_to_laserscan/angle_increment: 0.007
+ * /pointcloud_to_laserscan/angle_max: 3.1415926
+ * /pointcloud_to_laserscan/angle_min: -3.1425926
+ * /pointcloud_to_laserscan/concurrency_level: 1
+ * /pointcloud_to_laserscan/inf_epsilon: 1.0
+ * /pointcloud_to_laserscan/max_height: 1
+ * /pointcloud_to_laserscan/min_height: -0.4
+ * /pointcloud_to_laserscan/range_max: 100
+ * /pointcloud_to_laserscan/range_min: 0.2
+ * /pointcloud_to_laserscan/scan_time: 0.1
+ * /pointcloud_to_laserscan/transform_tolerance: 0.01
+ * /pointcloud_to_laserscan/use_inf: True
+ * /rosdistro: melodic
+ * /rosversion: 1.14.13
+ * /velodyne_nodelet_manager_driver/cut_angle: -0.01
+ * /velodyne_nodelet_manager_driver/device_ip: 192.168.8.201
+ * /velodyne_nodelet_manager_driver/frame_id: velodyne
+ * /velodyne_nodelet_manager_driver/gps_time: False
+ * /velodyne_nodelet_manager_driver/model: VLP16
+ * /velodyne_nodelet_manager_driver/pcap: 
+ * /velodyne_nodelet_manager_driver/port: 2368
+ * /velodyne_nodelet_manager_driver/read_fast: False
+ * /velodyne_nodelet_manager_driver/read_once: False
+ * /velodyne_nodelet_manager_driver/repeat_delay: 0.0
+ * /velodyne_nodelet_manager_driver/rpm: 600.0
+ * /velodyne_nodelet_manager_driver/timestamp_first_packet: False
+ * /velodyne_nodelet_manager_laserscan/resolution: 0.0314
+ * /velodyne_nodelet_manager_laserscan/ring: -1
+ * /velodyne_nodelet_manager_transform/calibration: /home/agilex/Docu...
+ * /velodyne_nodelet_manager_transform/fixed_frame: 
+ * /velodyne_nodelet_manager_transform/max_range: 100.0
+ * /velodyne_nodelet_manager_transform/min_range: 0.4
+ * /velodyne_nodelet_manager_transform/model: VLP16
+ * /velodyne_nodelet_manager_transform/organize_cloud: False
+ * /velodyne_nodelet_manager_transform/target_frame: 
+
+NODES
+  /
+    base_link_to_laser (tf/static_transform_publisher)
+    pointcloud_to_laserscan (pointcloud_to_laserscan/pointcloud_to_laserscan_node)
+    velodyne_nodelet_manager (nodelet/nodelet)
+    velodyne_nodelet_manager_driver (nodelet/nodelet)
+    velodyne_nodelet_manager_laserscan (nodelet/nodelet)
+    velodyne_nodelet_manager_transform (nodelet/nodelet)
+
+[1mROS_MASTER_URI=http://localhost:11311[0m
+]2;/home/agilex/Documents/PhDAlex/AGV-Mapping/catkin_ws/src/scout_base/scout_bringup/launch/open_rslidar.launch http://localhost:11311
+[1mprocess[velodyne_nodelet_manager-1]: started with pid [24138][0m
+[1mprocess[velodyne_nodelet_manager_driver-2]: started with pid [24139][0m
+[1mprocess[velodyne_nodelet_manager_transform-3]: started with pid [24140][0m
+[1mprocess[velodyne_nodelet_manager_laserscan-4]: started with pid [24142][0m
+[1mprocess[pointcloud_to_laserscan-5]: started with pid [24158][0m
+[1mprocess[base_link_to_laser-6]: started with pid [24171][0m
+[base_link_to_laser-6] killing on exit
+[velodyne_nodelet_manager_transform-3] killing on exit
+[pointcloud_to_laserscan-5] killing on exit
+[velodyne_nodelet_manager_laserscan-4] killing on exit
+[velodyne_nodelet_manager_driver-2] killing on exit
+[velodyne_nodelet_manager-1] killing on exit
+shutting down processing monitor...
+... shutting down processing monitor complete
+[1mdone[0m

@@ -6,6 +6,7 @@ set -euo pipefail
 # for stopping.
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/mapping_startup_health.sh"
 WORKSPACE="${WORKSPACE:-$(cd "$SCRIPT_DIR/.." && pwd)}"
 CATKIN_WS_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 ROS_ROOT_DIR="$(cd "$WORKSPACE/.." && pwd)"
@@ -15,9 +16,13 @@ LOG_DIR="${LOG_DIR:-$RUN_DIR/logs}"
 PID_FILE="${PID_FILE:-$RUN_DIR/pids}"
 
 LIDAR_TOPIC="${LIDAR_TOPIC:-${INPUT_TOPIC:-/registered_cloud}}"
+LIDAR_RAW_TOPIC="${LIDAR_RAW_TOPIC:-/velodyne_points}"
+LIDAR_DEVICE_IP="${LIDAR_DEVICE_IP:-192.168.8.201}"
+LIDAR_HOST_IP="${LIDAR_HOST_IP:-192.168.8.174}"
+LIDAR_DATA_PORT="${LIDAR_DATA_PORT:-2368}"
 CAMERA_TOPIC="${CAMERA_TOPIC:-/camera/depth/color/points}"
 CAMERA_DEPTH_TOPIC="${CAMERA_DEPTH_TOPIC:-/camera/aligned_depth_to_color/image_raw}"
-USE_ALIGNED_DEPTH_FOR_CAMERA="${USE_ALIGNED_DEPTH_FOR_CAMERA:-true}"
+USE_ALIGNED_DEPTH_FOR_CAMERA="${USE_ALIGNED_DEPTH_FOR_CAMERA:-false}"
 CAMERA_COLOR_TOPIC="${CAMERA_COLOR_TOPIC:-/camera/color/image_raw}"
 CAMERA_INFO_TOPIC="${CAMERA_INFO_TOPIC:-/camera/color/camera_info}"
 ENABLE_CAMERA_COLOR="${ENABLE_CAMERA_COLOR:-true}"
@@ -64,6 +69,8 @@ CAMERA_PARENT_FRAME="${CAMERA_PARENT_FRAME:-base_link}"
 CAMERA_CHILD_FRAME="${CAMERA_CHILD_FRAME:-camera_link}"
 CAMERA_XYZ="${CAMERA_XYZ:-0.16 0.0 0.20}"
 CAMERA_RPY="${CAMERA_RPY:-0 0 0}"
+CAMERA_VISUALIZATION_FRAME="${CAMERA_VISUALIZATION_FRAME:-camera_depth_optical_frame}"
+RVIZ_FIXED_FRAME="${RVIZ_FIXED_FRAME:-$CAMERA_VISUALIZATION_FRAME}"
 CAMERA_INTENSITY="${CAMERA_INTENSITY:-0.0}"
 TRANSFORM_TIMEOUT="${TRANSFORM_TIMEOUT:-0.5}"
 USE_LATEST_TF_ON_FAILURE="${USE_LATEST_TF_ON_FAILURE:-false}"
@@ -82,19 +89,6 @@ else
   echo "Script directory: $SCRIPT_DIR"
 fi
 
-ENABLE_METADATA_LOGGER="${ENABLE_METADATA_LOGGER:-true}"
-DOBACK_ENABLE="${DOBACK_ENABLE:-false}"
-DOBACK_REQUIRED="${DOBACK_REQUIRED:-false}"
-DOBACK_PORT="${DOBACK_PORT:-/dev/ttyACM0}"
-DOBACK_BAUD="${DOBACK_BAUD:-115200}"
-GPS_TCP_ENABLE="${GPS_TCP_ENABLE:-true}"
-GPS_TCP_BIND="${GPS_TCP_BIND:-0.0.0.0}"
-GPS_TCP_PORT="${GPS_TCP_PORT:-29500}"
-GPS_ALLOWED_HOSTS="${GPS_ALLOWED_HOSTS:-100.93.178.118,127.0.0.1,::1}"
-GPS_REQUIRED="${GPS_REQUIRED:-false}"
-METADATA_ROBOT_FRAME="${METADATA_ROBOT_FRAME:-base_link}"
-METADATA_JOIN_SLOP_SEC="${METADATA_JOIN_SLOP_SEC:-2.0}"
-
 REALSENSE_DEPTH_WIDTH="${REALSENSE_DEPTH_WIDTH:-640}"
 REALSENSE_DEPTH_HEIGHT="${REALSENSE_DEPTH_HEIGHT:-480}"
 REALSENSE_COLOR_WIDTH="${REALSENSE_COLOR_WIDTH:-640}"
@@ -106,9 +100,18 @@ REALSENSE_CLIP_DISTANCE="${REALSENSE_CLIP_DISTANCE:--1}"
 REALSENSE_POINTCLOUD_TEXTURE_STREAM="${REALSENSE_POINTCLOUD_TEXTURE_STREAM:-RS2_STREAM_COLOR}"
 REALSENSE_POINTCLOUD_TEXTURE_INDEX="${REALSENSE_POINTCLOUD_TEXTURE_INDEX:-0}"
 REALSENSE_ALLOW_NO_TEXTURE_POINTS="${REALSENSE_ALLOW_NO_TEXTURE_POINTS:-false}"
-REALSENSE_INITIAL_RESET="${REALSENSE_INITIAL_RESET:-true}"
+REALSENSE_INITIAL_RESET="${REALSENSE_INITIAL_RESET:-false}"
+REALSENSE_ENABLE_POINTCLOUD="${REALSENSE_ENABLE_POINTCLOUD:-true}"
+REALSENSE_ALIGN_DEPTH="${REALSENSE_ALIGN_DEPTH:-false}"
+REALSENSE_READY_TIMEOUT="${REALSENSE_READY_TIMEOUT:-30}"
+CAMERA_OUTPUT_READY_TIMEOUT="${CAMERA_OUTPUT_READY_TIMEOUT:-30}"
+LIDAR_READY_TIMEOUT="${LIDAR_READY_TIMEOUT:-15}"
 
 mkdir -p "$OUTPUT_DIR" "$LOG_DIR"
+
+if [ "$RVIZ" = "true" ]; then
+  mapping_validate_rviz_environment
+fi
 
 if [ -f "$PID_FILE" ]; then
   running=false
@@ -129,6 +132,25 @@ fi
 
 rm -f "$PID_FILE"
 
+STARTUP_COMMITTED=false
+cleanup_partial_start() {
+  local status="$?"
+  if [ "$STARTUP_COMMITTED" != true ]; then
+    echo "Mapping startup failed; stopping processes started by this session." >&2
+    if [ -f "$PID_FILE" ]; then
+      while read -r pid name _; do
+        if [ -n "${pid:-}" ] && kill -0 "$pid" 2>/dev/null; then
+          echo "Stopping session process $name pid=$pid" >&2
+          kill -- "-$pid" 2>/dev/null || kill "$pid" 2>/dev/null || true
+        fi
+      done < <(tac "$PID_FILE")
+      rm -f "$PID_FILE"
+    fi
+  fi
+  return "$status"
+}
+trap cleanup_partial_start EXIT
+
 start_process() {
   local name="$1"
   shift
@@ -137,7 +159,7 @@ start_process() {
 
   printf -v command "%q " "$@"
 
-  nohup bash -lc "
+  nohup setsid bash -lc "
     source /opt/ros/melodic/setup.bash
     if [ -f \"$WORKSPACE/devel/setup.bash\" ]; then
       source \"$WORKSPACE/devel/setup.bash\"
@@ -168,24 +190,58 @@ wait_for_ros_node() {
 }
 
 start_process lidar roslaunch scout_bringup open_rslidar.launch \
+  device_ip:="$LIDAR_DEVICE_IP" \
+  port:="$LIDAR_DATA_PORT" \
   enable_rf2o:=false \
   publish_robot_description:=false
 sleep 2
-start_process realsense roslaunch scout_pointcloud_accumulator realsense_mapping.launch \
-  camera:="$CAMERA_NAME" \
-  depth_width:="$REALSENSE_DEPTH_WIDTH" \
-  depth_height:="$REALSENSE_DEPTH_HEIGHT" \
-  color_width:="$REALSENSE_COLOR_WIDTH" \
-  color_height:="$REALSENSE_COLOR_HEIGHT" \
-  depth_fps:="$REALSENSE_DEPTH_FPS" \
-  color_fps:="$REALSENSE_COLOR_FPS" \
-  filters:="$REALSENSE_FILTERS" \
-  clip_distance:="$REALSENSE_CLIP_DISTANCE" \
-  pointcloud_texture_stream:="$REALSENSE_POINTCLOUD_TEXTURE_STREAM" \
-  pointcloud_texture_index:="$REALSENSE_POINTCLOUD_TEXTURE_INDEX" \
-  allow_no_texture_points:="$REALSENSE_ALLOW_NO_TEXTURE_POINTS" \
-  initial_reset:="$REALSENSE_INITIAL_RESET"
-sleep 2
+if [ "$ENABLE_LIDAR" = "true" ] && ! ip -4 -o addr show | grep -Fq " $LIDAR_HOST_IP/"; then
+  echo "ERROR: LiDAR sends to $LIDAR_HOST_IP, but this address is not assigned to the Xavier." >&2
+  ip -br -4 addr >&2 || true
+  exit 1
+fi
+if [ "$ENABLE_LIDAR" = "true" ] && \
+   ! mapping_wait_for_topics_once "$LIDAR_READY_TIMEOUT" "$LIDAR_RAW_TOPIC"; then
+  echo "ERROR: no LiDAR packets were received on $LIDAR_RAW_TOPIC within ${LIDAR_READY_TIMEOUT}s." >&2
+  echo "Expected sensor=$LIDAR_DEVICE_IP destination=$LIDAR_HOST_IP UDP=$LIDAR_DATA_PORT." >&2
+  echo "Verify LiDAR power, Ethernet cabling and that the saved sensor configuration matches these values." >&2
+  echo "Current IPv4 addresses:" >&2
+  ip -br -4 addr >&2 || true
+  tail -n 40 "$LOG_DIR/lidar.log" >&2 2>/dev/null || true
+  exit 1
+fi
+if [ "$ENABLE_CAMERA" = "true" ]; then
+  mapping_camera_preflight
+  start_process realsense roslaunch scout_pointcloud_accumulator realsense_mapping.launch \
+    camera:="$CAMERA_NAME" \
+    depth_width:="$REALSENSE_DEPTH_WIDTH" \
+    depth_height:="$REALSENSE_DEPTH_HEIGHT" \
+    color_width:="$REALSENSE_COLOR_WIDTH" \
+    color_height:="$REALSENSE_COLOR_HEIGHT" \
+    depth_fps:="$REALSENSE_DEPTH_FPS" \
+    color_fps:="$REALSENSE_COLOR_FPS" \
+    filters:="$REALSENSE_FILTERS" \
+    clip_distance:="$REALSENSE_CLIP_DISTANCE" \
+    pointcloud_texture_stream:="$REALSENSE_POINTCLOUD_TEXTURE_STREAM" \
+    pointcloud_texture_index:="$REALSENSE_POINTCLOUD_TEXTURE_INDEX" \
+    allow_no_texture_points:="$REALSENSE_ALLOW_NO_TEXTURE_POINTS" \
+    enable_pointcloud:="$REALSENSE_ENABLE_POINTCLOUD" \
+    align_depth:="$REALSENSE_ALIGN_DEPTH" \
+    initial_reset:="$REALSENSE_INITIAL_RESET"
+
+  if [ "$USE_ALIGNED_DEPTH_FOR_CAMERA" = "true" ]; then
+    if ! mapping_wait_for_topics_once "$REALSENSE_READY_TIMEOUT" \
+        "$CAMERA_DEPTH_TOPIC" "$CAMERA_COLOR_TOPIC" "$CAMERA_INFO_TOPIC"; then
+      mapping_print_camera_diagnostics "$LOG_DIR/realsense.log"
+      exit 1
+    fi
+  elif ! wait_for_ros_node /camera/realsense2_camera "$REALSENSE_READY_TIMEOUT"; then
+    mapping_print_camera_diagnostics "$LOG_DIR/realsense.log"
+    exit 1
+  fi
+  echo "RealSense camera driver is ready."
+fi
+
 start_process lego_loam roslaunch lego_loam run.launch rviz:=false use_imu:="$LEGO_USE_IMU" lock_roll_pitch:="$LEGO_LOCK_ROLL_PITCH"
 if ! wait_for_ros_node /camera_init_to_map 20; then
   echo "WARNING: LeGO-LOAM did not publish /camera_init_to_map after 20 seconds."
@@ -203,6 +259,8 @@ start_process accumulator roslaunch scout_pointcloud_accumulator accumulate.laun
   enable_lidar:="$ENABLE_LIDAR" \
   enable_camera:="$ENABLE_CAMERA" \
   target_frame:="$TARGET_FRAME" \
+  camera_visualization_frame:="$CAMERA_VISUALIZATION_FRAME" \
+  rviz_fixed_frame:="$RVIZ_FIXED_FRAME" \
   voxel_size:="$VOXEL_SIZE" \
   lidar_voxel_size:="$LIDAR_VOXEL_SIZE" \
   camera_voxel_size:="$CAMERA_VOXEL_SIZE" \
@@ -224,33 +282,35 @@ start_process accumulator roslaunch scout_pointcloud_accumulator accumulate.laun
   camera_rpy:="$CAMERA_RPY" \
   rviz:="$RVIZ"
 
-if [ "$ENABLE_METADATA_LOGGER" = "true" ]; then
-  start_process metadata roslaunch scout_pointcloud_accumulator mapping_metadata.launch \
-    output_pcd:="$PCD_FILE" \
-    target_frame:="$TARGET_FRAME" \
-    robot_frame:="$METADATA_ROBOT_FRAME" \
-    doback_enable:="$DOBACK_ENABLE" \
-    doback_required:="$DOBACK_REQUIRED" \
-    doback_port:="$DOBACK_PORT" \
-    doback_baud:="$DOBACK_BAUD" \
-    gps_tcp_enable:="$GPS_TCP_ENABLE" \
-    gps_tcp_bind:="$GPS_TCP_BIND" \
-    gps_tcp_port:="$GPS_TCP_PORT" \
-    gps_allowed_hosts:="$GPS_ALLOWED_HOSTS" \
-    gps_required:="$GPS_REQUIRED" \
-    join_slop_sec:="$METADATA_JOIN_SLOP_SEC"
-  if ! wait_for_ros_node /mapping_metadata_logger 10; then
-    echo "WARNING: mapping_metadata_logger did not stay alive after launch."
-    echo "Metadata CSVs may be missing. Check: $LOG_DIR/metadata.log"
-  fi
-fi
-
 if ! wait_for_ros_node /accumulator_node 15; then
   echo "ERROR: accumulator_node did not stay alive after launch."
   echo "Check: $LOG_DIR/accumulator.log"
   tail -n 80 "$LOG_DIR/accumulator.log" 2>/dev/null || true
   exit 1
 fi
+
+if [ "$ENABLE_CAMERA" = "true" ] && [ "$USE_ALIGNED_DEPTH_FOR_CAMERA" != "true" ]; then
+  if ! mapping_wait_for_topics_once "$REALSENSE_READY_TIMEOUT" "$CAMERA_TOPIC"; then
+    mapping_print_camera_diagnostics "$LOG_DIR/realsense.log"
+    exit 1
+  fi
+fi
+
+if [ "$ENABLE_CAMERA" = "true" ] && \
+   ! mapping_wait_for_camera_topics "$CAMERA_OUTPUT_READY_TIMEOUT" /camera/colored_points; then
+  echo "ERROR: accumulator did not sustain /camera/colored_points." >&2
+  echo "The RealSense input is running, but the accumulator could not publish its visualization output." >&2
+  echo "Check camera TF and inspect: $LOG_DIR/accumulator.log" >&2
+  tail -n 60 "$LOG_DIR/accumulator.log" 2>/dev/null || true
+  exit 1
+fi
+
+if [ "$RVIZ" = "true" ] && ! wait_for_ros_node /rviz 10; then
+  echo "ERROR: RViz did not stay alive. Check DISPLAY and $LOG_DIR/accumulator.log" >&2
+  exit 1
+fi
+
+STARTUP_COMMITTED=true
 
 cat <<EOF
 
@@ -263,16 +323,6 @@ Accumulated PCD outputs:
   ${PCD_FILE%.pcd}_lidar.pcd
   ${PCD_FILE%.pcd}_camera.pcd
   ${PCD_FILE%.pcd}_fused.pcd
-
-Metadata outputs:
-  ${PCD_FILE%.pcd}_doback_raw.csv
-  ${PCD_FILE%.pcd}_doback_stability.csv
-  ${PCD_FILE%.pcd}_gps.csv
-  ${PCD_FILE%.pcd}_map_track.csv
-  ${PCD_FILE%.pcd}_session_manifest.json
-
-PC LilyGO bridge:
-  python $WORKSPACE/scripts/gps_lilygo_tcp_bridge.py --serial-port COM5 --agv-host 100.123.78.14 --agv-port $GPS_TCP_PORT
 
 Save at any time:
   $WORKSPACE/scripts/save_accumulated_map.sh

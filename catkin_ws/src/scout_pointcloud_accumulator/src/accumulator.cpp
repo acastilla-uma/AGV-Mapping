@@ -40,6 +40,7 @@ public:
     nh_.param<bool>("enable_camera_color", enable_camera_color_, true);
     nh_.param<bool>("use_aligned_depth_for_camera", use_aligned_depth_for_camera_, true);
     nh_.param<std::string>("target_frame", target_frame_, "map");
+    nh_.param<std::string>("camera_visualization_frame", camera_visualization_frame_, "camera_depth_optical_frame");
     nh_.param<double>("voxel_size", voxel_size_, 0.05);
     nh_.param<double>("lidar_voxel_size", lidar_voxel_size_, voxel_size_);
     nh_.param<double>("camera_voxel_size", camera_voxel_size_, 0.05);
@@ -229,6 +230,7 @@ public:
       applyVoxelFilter(instant_rgb, camera_visualization_voxel_size_);
     }
 
+    bool visualization_succeeded = !visualize;
     if (visualize) {
       sensor_msgs::PointCloud2 instant_msg;
       pcl::toROSMsg(instant_rgb, instant_msg);
@@ -237,15 +239,28 @@ public:
 
       sensor_msgs::PointCloud2 instant_transformed_msg;
       try {
-        transformCloud(instant_msg, instant_transformed_msg, target_frame_, "RealSense visualization");
+        transformCloud(instant_msg, instant_transformed_msg, camera_visualization_frame_, "RealSense visualization");
         pcl::PointCloud<pcl::PointXYZRGB> instant_transformed_rgb;
         pcl::fromROSMsg(instant_transformed_msg, instant_transformed_rgb);
         removeInvalidPoints(instant_transformed_rgb);
         std::lock_guard<std::mutex> lock(mutex_);
-        publishCloud(instant_transformed_rgb, camera_instant_pub_, stamp);
+        publishCloud(instant_transformed_rgb, camera_instant_pub_, camera_visualization_frame_, stamp);
+        visualization_succeeded = true;
       } catch (tf2::TransformException& ex) {
         ROS_WARN_THROTTLE(5.0, "RealSense visualization transform failed: %s", ex.what());
       }
+    }
+
+    if (!accumulate) {
+      return visualization_succeeded;
+    }
+
+    const std::string source_frame = normalizedFrameId(source_rgb.header.frame_id);
+    if (!tfBuffer_.canTransform(target_frame_, source_frame, stamp, ros::Duration(0.0))) {
+      ROS_WARN_THROTTLE(5.0,
+                        "RealSense visualization is active, but accumulation is waiting for TF %s <- %s.",
+                        target_frame_.c_str(), source_frame.c_str());
+      return visualization_succeeded;
     }
 
     pcl::PointCloud<pcl::PointXYZRGB> accumulate_source_rgb = source_rgb;
@@ -278,10 +293,6 @@ public:
     convertRGBToXYZI(rgb_in, xyzi_in);
 
     std::lock_guard<std::mutex> lock(mutex_);
-    if (!accumulate) {
-      return true;
-    }
-
     appendAndFilter(accumulated_camera_rgb_, rgb_in, camera_voxel_size_);
     publishCloud(accumulated_camera_rgb_, camera_pub_, stamp);
 
@@ -982,6 +993,7 @@ private:
   std::string camera_color_topic_;
   std::string camera_info_topic_;
   std::string target_frame_;
+  std::string camera_visualization_frame_;
   double voxel_size_;
   double lidar_voxel_size_;
   double camera_voxel_size_;

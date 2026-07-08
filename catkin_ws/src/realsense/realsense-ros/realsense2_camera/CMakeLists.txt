@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(realsense2_camera)
 add_compile_options(-std=c++11)
+set(REALSENSE2_REQUIRED_VERSION "2.57.6")
 
 option(BUILD_WITH_OPENMP "Use OpenMP" OFF)
 option(SET_USER_BREAK_AT_STARTUP "Set user wait point in startup (for debug)" OFF)
@@ -38,15 +39,34 @@ if(SET_USER_BREAK_AT_STARTUP)
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DBPDEBUG")
 endif()
 
+if (NOT WIN32 AND NOT realsense2_DIR AND
+    EXISTS "/usr/local/lib/cmake/realsense2/realsense2Config.cmake")
+  set(realsense2_DIR "/usr/local/lib/cmake/realsense2")
+endif()
+
 if (WIN32)
 find_package(realsense2 CONFIG REQUIRED)
 else()
-find_package(realsense2 2.42.0)
+find_package(realsense2 ${REALSENSE2_REQUIRED_VERSION} EXACT CONFIG REQUIRED)
 endif()
 
 if(NOT realsense2_FOUND)
     message(FATAL_ERROR "\n\n Intel RealSense SDK 2.0 is missing, please install it from https://github.com/IntelRealSense/librealsense/releases\n\n")
 endif()
+
+# ROS Melodic adds /opt/ros/melodic/include before /usr/local/include. Copy the
+# headers selected by the imported SDK target into a build-local include root so
+# the 2.50 ROS installation cannot shadow the required 2.57 headers.
+if(NOT TARGET realsense2::realsense2)
+    message(FATAL_ERROR "The selected RealSense SDK does not export realsense2::realsense2")
+endif()
+get_target_property(REALSENSE2_IMPORTED_INCLUDE_DIRS
+    realsense2::realsense2 INTERFACE_INCLUDE_DIRECTORIES)
+list(GET REALSENSE2_IMPORTED_INCLUDE_DIRS 0 REALSENSE2_IMPORTED_INCLUDE_DIR)
+set(REALSENSE2_HEADER_ROOT "${CMAKE_CURRENT_BINARY_DIR}/realsense2_sdk")
+file(REMOVE_RECURSE "${REALSENSE2_HEADER_ROOT}/librealsense2")
+file(COPY "${REALSENSE2_IMPORTED_INCLUDE_DIR}/librealsense2"
+     DESTINATION "${REALSENSE2_HEADER_ROOT}")
 
 if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Release)
@@ -78,7 +98,8 @@ generate_messages(
     )
 
 set(CMAKE_NO_SYSTEM_FROM_IMPORTED true)
-include_directories(
+include_directories(BEFORE
+    ${REALSENSE2_HEADER_ROOT}
     include
     ${realsense2_INCLUDE_DIR}
     ${catkin_INCLUDE_DIRS}
@@ -108,11 +129,11 @@ add_library(${PROJECT_NAME}
 add_dependencies(${PROJECT_NAME} ${PROJECT_NAME}_generate_messages_cpp)
 add_dependencies(${PROJECT_NAME} ${catkin_EXPORTED_TARGETS})
 
-target_include_directories(${PROJECT_NAME}
-  PRIVATE ${realsense2_INCLUDE_DIR})
+target_include_directories(${PROJECT_NAME} BEFORE PRIVATE
+  ${REALSENSE2_HEADER_ROOT})
 
 target_link_libraries(${PROJECT_NAME}
-    ${realsense2_LIBRARY}
+    realsense2::realsense2
     ${catkin_LIBRARIES}
     ${CMAKE_THREAD_LIBS_INIT}
     )
@@ -152,4 +173,3 @@ install(DIRECTORY rviz/
 install(FILES nodelet_plugins.xml
     DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
     )
-
