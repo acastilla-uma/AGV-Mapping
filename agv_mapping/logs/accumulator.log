@@ -1,30 +1,31 @@
 QXcbConnection: XCB error: 148 (Unknown), sequence: 174, resource id: 0, major code: 140 (Unknown), minor code: 20
-[33m[ WARN] [1783508283.660480052]: RealSense visualization is active, but accumulation is waiting for TF map <- camera_depth_optical_frame.[0m
+[33m[ WARN] [1783509217.754116472]: RealSense visualization is active, but accumulation is waiting for TF map <- camera_depth_optical_frame.[0m
 QObject::connect: Cannot queue arguments of type 'QVector<int>'
 (Make sure 'QVector<int>' is registered using qRegisterMetaType().)
 QObject::connect: Cannot queue arguments of type 'QVector<int>'
 (Make sure 'QVector<int>' is registered using qRegisterMetaType().)
-[0m[ INFO] [1783508283.320360833]: PCD save sources: LiDAR=true Camera=true[0m
-[0m[ INFO] [1783508283.337071970]: LiDAR accumulation enabled: /registered_cloud[0m
-[0m[ INFO] [1783508283.361043442]: RealSense pointcloud accumulation enabled: /camera/depth/color/points[0m
-[0m[ INFO] [1783508283.397283036]: RealSense colorization enabled: image=/camera/color/image_raw info=/camera/color/camera_info[0m
-[0m[ INFO] [1783508283.397434725]: RealSense accumulation rate 1.00 Hz, visualization rate 5.00 Hz, accumulated voxel 0.050 m, instant voxel 0.020 m, range 0.20-5.00 m[0m
-[0m[ INFO] [1783508395.058329463]: Saved LiDAR-only cloud to /home/agilex/Documents/PhDAlex/AGV-Mapping/maps/map_20260708_185749_lidar.pcd[0m
-[0m[ INFO] [1783508395.074118519]: Saved RGB camera-only cloud to /home/agilex/Documents/PhDAlex/AGV-Mapping/maps/map_20260708_185749_camera.pcd[0m
-[0m[ INFO] [1783508395.133879697]: Saved fused LiDAR+RGB camera cloud to /home/agilex/Documents/PhDAlex/AGV-Mapping/maps/map_20260708_185749_fused.pcd[0m
-[0m[ INFO] [1783508283.341065359]: rviz version 1.13.30[0m
-[0m[ INFO] [1783508283.341166965]: compiled against Qt version 5.9.5[0m
-[0m[ INFO] [1783508283.341195703]: compiled against OGRE version 1.9.0 (Ghadamon)[0m
-[0m[ INFO] [1783508283.374044343]: Forcing OpenGl version 0.[0m
-[0m[ INFO] [1783508284.219975921]: Stereo is NOT SUPPORTED[0m
-[0m[ INFO] [1783508284.220118681]: OpenGL device: NVIDIA Tegra Xavier (nvgpu)/integrated[0m
-[0m[ INFO] [1783508284.220188669]: OpenGl version: 4.6 (GLSL 4.6).[0m
-... logging to /home/agilex/.ros/log/b9e5276e-7a0d-11f1-86a2-48b02d3c846d/roslaunch-xavier-25489.log
+[INFO] [1783509217.700522]: AGV direction indicator publishing on /agv/direction_marker in frame base_link
+[0m[ INFO] [1783509217.280899528]: PCD save sources: LiDAR=true Camera=true[0m
+[0m[ INFO] [1783509217.309701451]: LiDAR accumulation enabled: /registered_cloud[0m
+[0m[ INFO] [1783509217.352792569]: RealSense pointcloud accumulation enabled: /camera/depth/color/points[0m
+[0m[ INFO] [1783509217.389428633]: RealSense colorization enabled: image=/camera/color/image_raw info=/camera/color/camera_info[0m
+[0m[ INFO] [1783509217.389524415]: RealSense accumulation rate 1.00 Hz, visualization rate 5.00 Hz, accumulated voxel 0.050 m, instant voxel 0.020 m, range 0.20-5.00 m[0m
+[0m[ INFO] [1783509277.452967444]: Saved LiDAR-only cloud to /home/agilex/Documents/PhDAlex/AGV-Mapping/maps/map_20260708_191323_lidar.pcd[0m
+[0m[ INFO] [1783509277.461107841]: Saved RGB camera-only cloud to /home/agilex/Documents/PhDAlex/AGV-Mapping/maps/map_20260708_191323_camera.pcd[0m
+[0m[ INFO] [1783509277.480541584]: Saved fused LiDAR+RGB camera cloud to /home/agilex/Documents/PhDAlex/AGV-Mapping/maps/map_20260708_191323_fused.pcd[0m
+[0m[ INFO] [1783509217.189203987]: rviz version 1.13.30[0m
+[0m[ INFO] [1783509217.189428031]: compiled against Qt version 5.9.5[0m
+[0m[ INFO] [1783509217.189544454]: compiled against OGRE version 1.9.0 (Ghadamon)[0m
+[0m[ INFO] [1783509217.226120322]: Forcing OpenGl version 0.[0m
+[0m[ INFO] [1783509218.075723050]: Stereo is NOT SUPPORTED[0m
+[0m[ INFO] [1783509218.075858193]: OpenGL device: NVIDIA Tegra Xavier (nvgpu)/integrated[0m
+[0m[ INFO] [1783509218.075928309]: OpenGl version: 4.6 (GLSL 4.6).[0m
+... logging to /home/agilex/.ros/log/b9e5276e-7a0d-11f1-86a2-48b02d3c846d/roslaunch-xavier-3809.log
 Checking log directory for disk usage. This may take a while.
 Press Ctrl-C to interrupt
 Done checking log file disk usage. Usage is <1GB.
 ]2;/home/agilex/Documents/PhDAlex/AGV-Mapping/catkin_ws/src/scout_pointcloud_accumulator/launch/accumulate.launch
-[1mstarted roslaunch server http://xavier:41083/[0m
+[1mstarted roslaunch server http://xavier:36109/[0m
 
 SUMMARY
 ========
@@ -56,21 +57,28 @@ PARAMETERS
  * /accumulator_node/use_aligned_depth_for_camera: False
  * /accumulator_node/use_latest_tf_on_failure: False
  * /accumulator_node/voxel_size: 0.05
+ * /agv_direction_marker/frame_id: base_link
+ * /agv_direction_marker/height: 0.35
+ * /agv_direction_marker/length: 1.2
+ * /agv_direction_marker/topic: /agv/direction_ma...
  * /rosdistro: melodic
  * /rosversion: 1.14.13
 
 NODES
   /
     accumulator_node (scout_pointcloud_accumulator/accumulator_node)
+    agv_direction_marker (scout_pointcloud_accumulator/agv_direction_marker.py)
     base_link_to_realsense (scout_pointcloud_accumulator/static_transform_rpy.py)
     rviz (rviz/rviz)
 
 [1mROS_MASTER_URI=http://localhost:11311[0m
 ]2;/home/agilex/Documents/PhDAlex/AGV-Mapping/catkin_ws/src/scout_pointcloud_accumulator/launch/accumulate.launch http://localhost:11311
-[1mprocess[base_link_to_realsense-1]: started with pid [25613][0m
-[1mprocess[accumulator_node-2]: started with pid [25614][0m
-[1mprocess[rviz-3]: started with pid [25615][0m
-[rviz-3] killing on exit
+[1mprocess[base_link_to_realsense-1]: started with pid [3950][0m
+[1mprocess[accumulator_node-2]: started with pid [3951][0m
+[1mprocess[agv_direction_marker-3]: started with pid [3952][0m
+[1mprocess[rviz-4]: started with pid [3953][0m
+[rviz-4] killing on exit
+[agv_direction_marker-3] killing on exit
 [accumulator_node-2] killing on exit
 [base_link_to_realsense-1] killing on exit
 shutting down processing monitor...

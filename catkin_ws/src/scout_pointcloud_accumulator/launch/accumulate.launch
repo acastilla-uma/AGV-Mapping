@@ -30,6 +30,11 @@
   <arg name="save_lidar" default="true" />
   <arg name="save_camera" default="true" />
   <arg name="rviz" default="true" />
+  <arg name="show_agv_direction" default="true" />
+  <arg name="agv_frame" default="base_link" />
+  <arg name="agv_direction_topic" default="/agv/direction_marker" />
+  <arg name="agv_direction_length" default="1.2" />
+  <arg name="agv_direction_height" default="0.35" />
 
   <arg name="publish_camera_tf" default="$(arg enable_camera)" />
   <arg name="camera_parent_frame" default="base_link" />
@@ -69,6 +74,14 @@
     <param name="output_pcd" value="$(arg output_pcd)" />
     <param name="save_lidar" value="$(arg save_lidar)" />
     <param name="save_camera" value="$(arg save_camera)" />
+  </node>
+
+  <node if="$(arg show_agv_direction)" pkg="scout_pointcloud_accumulator"
+        type="agv_direction_marker.py" name="agv_direction_marker" output="screen">
+    <param name="frame_id" value="$(arg agv_frame)" />
+    <param name="topic" value="$(arg agv_direction_topic)" />
+    <param name="length" value="$(arg agv_direction_length)" />
+    <param name="height" value="$(arg agv_direction_height)" />
   </node>
 
   <node if="$(arg rviz)" pkg="rviz" type="rviz" name="rviz"

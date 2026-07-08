@@ -122,6 +122,7 @@ La extrínseca de cámara se carga desde [`camera_lidar_calibration.yaml`](catki
 | `/accumulated_lidar_points` | LiDAR acumulado XYZ + intensidad. |
 | `/accumulated_camera_points` | Cámara acumulada XYZRGB. |
 | `/camera/colored_points` | Nube RGB instantánea reconstruida. |
+| `/agv/direction_marker` | Flecha y etiqueta que indican en RViz el frente detectado del AGV. |
 | `/accumulator_node/save_accumulated` | Servicio `std_srvs/Empty` que guarda los PCD. |
 
 ## Compilación

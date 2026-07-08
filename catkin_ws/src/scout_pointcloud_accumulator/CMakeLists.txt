@@ -10,13 +10,14 @@ find_package(catkin REQUIRED COMPONENTS
   tf
   tf2_ros
   tf2_sensor_msgs
+  visualization_msgs
   std_srvs
 )
 
 find_package(PCL REQUIRED)
 
 catkin_package(
-  CATKIN_DEPENDS roscpp rospy sensor_msgs pcl_ros pcl_conversions tf tf2_ros tf2_sensor_msgs std_srvs
+  CATKIN_DEPENDS roscpp rospy sensor_msgs pcl_ros pcl_conversions tf tf2_ros tf2_sensor_msgs visualization_msgs std_srvs
 )
 
 include_directories(
@@ -37,6 +38,7 @@ catkin_install_python(PROGRAMS
   scripts/camera_lidar_calibrator.py
   scripts/camera_lidar_calibration_viewer.py
   scripts/camera_lidar_calibration_env.py
+  scripts/agv_direction_marker.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 
