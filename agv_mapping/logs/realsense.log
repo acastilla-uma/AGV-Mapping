@@ -1,9 +1,9 @@
-... logging to /home/agilex/.ros/log/b9e5276e-7a0d-11f1-86a2-48b02d3c846d/roslaunch-xavier-2741.log
+... logging to /home/agilex/.ros/log/b9e5276e-7a0d-11f1-86a2-48b02d3c846d/roslaunch-xavier-7343.log
 Checking log directory for disk usage. This may take a while.
 Press Ctrl-C to interrupt
 Done checking log file disk usage. Usage is <1GB.
 ]2;/home/agilex/Documents/PhDAlex/AGV-Mapping/catkin_ws/src/scout_pointcloud_accumulator/launch/realsense_mapping.launch
-[1mstarted roslaunch server http://xavier:43329/[0m
+[1mstarted roslaunch server http://xavier:39063/[0m
 
 SUMMARY
 ========
@@ -71,50 +71,50 @@ PARAMETERS
  * /camera/realsense2_camera/infra2_optical_frame_id: camera_infra2_opt...
  * /camera/realsense2_camera/infra_fps: -1
  * /camera/realsense2_camera/infra_height: -1
- * /camera/realsense2_camera/i[33m[ WARN] [1783509210.885200649]: Param '/camera/rgb_camera/power_line_frequency' has value 3 that is not in the enum { {50Hz: 1} {60Hz: 2} {Disabled: 0} }. Removing this parameter from dynamic reconfigure options.[0m
-[33m[ WARN] [1783509211.769304829]: [0m
-[0m[ INFO] [1783509209.817414968]: Initializing nodelet with 8 worker threads.[0m
-[0m[ INFO] [1783509210.301340268]: RealSense ROS v2.2.22[0m
-[0m[ INFO] [1783509210.301442994]: Built with LibRealSense v2.57.6[0m
-[0m[ INFO] [1783509210.301512565]: Running with LibRealSense v2.57.6[0m
-[0m[ INFO] [1783509210.362678214]:  [0m
-[0m[ INFO] [1783509210.367200743]: Device with serial number 135522077961 was found.
+ * /camera/realsense2_camera/i[33m[ WARN] [1783509609.022204649]: Param '/camera/rgb_camera/power_line_frequency' has value 3 that is not in the enum { {50Hz: 1} {60Hz: 2} {Disabled: 0} }. Removing this parameter from dynamic reconfigure options.[0m
+[33m[ WARN] [1783509609.745918145]: [0m
+[0m[ INFO] [1783509608.079369814]: Initializing nodelet with 8 worker threads.[0m
+[0m[ INFO] [1783509608.551931904]: RealSense ROS v2.2.22[0m
+[0m[ INFO] [1783509608.552029798]: Built with LibRealSense v2.57.6[0m
+[0m[ INFO] [1783509608.552075880]: Running with LibRealSense v2.57.6[0m
+[0m[ INFO] [1783509608.606821277]:  [0m
+[0m[ INFO] [1783509608.612115176]: Device with serial number 135522077961 was found.
 [0m
-[0m[ INFO] [1783509210.367338447]: Device with physical ID /sys/devices/3610000.xhci/usb2/2-4/2-4.1/2-4.1.4/2-4.1.4:1.0/video4linux/video0 was found.[0m
-[0m[ INFO] [1783509210.367375537]: Device with name Intel RealSense D435 was found.[0m
-[0m[ INFO] [1783509210.368321095]: Device with port number 2-4.1.4 was found.[0m
-[0m[ INFO] [1783509210.368466671]: Device USB type: 3.2[0m
-[0m[ INFO] [1783509210.374936894]: getParameters...[0m
-[0m[ INFO] [1783509210.633730244]: setupDevice...[0m
-[0m[ INFO] [1783509210.633804968]: JSON file is not provided[0m
-[0m[ INFO] [1783509210.633846250]: ROS Node Namespace: camera[0m
-[0m[ INFO] [1783509210.633918062]: Device Name: Intel RealSense D435[0m
-[0m[ INFO] [1783509210.633965745]: Device Serial No: 135522077961[0m
-[0m[ INFO] [1783509210.634051254]: Device physical port: /sys/devices/3610000.xhci/usb2/2-4/2-4.1/2-4.1.4/2-4.1.4:1.0/video4linux/video0[0m
-[0m[ INFO] [1783509210.634129594]: Device FW version: 5.17.0.10[0m
-[0m[ INFO] [1783509210.634169853]: Device Product ID: 0x0B07[0m
-[0m[ INFO] [1783509210.634215999]: Enable PointCloud: On[0m
-[0m[ INFO] [1783509210.634277283]: Align Depth: Off[0m
-[0m[ INFO] [1783509210.634323173]: Sync Mode: On[0m
-[0m[ INFO] [1783509210.634463437]: Device Sensors: [0m
-[0m[ INFO] [1783509210.639862368]: Stereo Module was found.[0m
-[0m[ INFO] [1783509210.649063850]: RGB Camera was found.[0m
-[0m[ INFO] [1783509210.649198706]: (Confidence, 0) sensor isn't supported by current device! -- Skipping...[0m
-[0m[ INFO] [1783509210.649266678]: Add Filter: pointcloud[0m
-[0m[ INFO] [1783509210.649602473]: num_filters: 1[0m
-[0m[ INFO] [1783509210.649681581]: Setting Dynamic reconfig parameters.[0m
-[0m[ INFO] [1783509210.961543704]: Done Setting Dynamic reconfig parameters.[0m
-[0m[ INFO] [1783509210.962778046]: depth stream is enabled - width: 640, height: 480, fps: 6, Format: Z16[0m
-[0m[ INFO] [1783509210.964052358]: color stream is enabled - width: 640, height: 480, fps: 6, Format: RGB8[0m
-[0m[ INFO] [1783509210.964153452]: setupPublishers...[0m
-[0m[ INFO] [1783509210.985281628]: Expected frequency for depth = 6.00000[0m
-[0m[ INFO] [1783509211.169254761]: Expected frequency for color = 6.00000[0m
-[0m[ INFO] [1783509211.365655768]: setupStreams...[0m
-[0m[ INFO] [1783509211.366831642]: insert Depth to Stereo Module[0m
-[0m[ INFO] [1783509211.366967362]: insert Color to RGB Camera[0m
-[0m[ INFO] [1783509211.374307299]: SELECTED BASE:Depth, 0[0m
-[0m[ INFO] [1783509211.469218127]: RealSense Node Is Up![0m
-[0m[ INFO] [1783509217.699677062]: publishing unordered pointcloud.[0m
+[0m[ INFO] [1783509608.612382392]: Device with physical ID /sys/devices/3610000.xhci/usb2/2-4/2-4.1/2-4.1.4/2-4.1.4:1.0/video4linux/video0 was found.[0m
+[0m[ INFO] [1783509608.612510815]: Device with name Intel RealSense D435 was found.[0m
+[0m[ INFO] [1783509608.613655071]: Device with port number 2-4.1.4 was found.[0m
+[0m[ INFO] [1783509608.613813832]: Device USB type: 3.2[0m
+[0m[ INFO] [1783509608.619212537]: getParameters...[0m
+[0m[ INFO] [1783509608.871889245]: setupDevice...[0m
+[0m[ INFO] [1783509608.872019876]: JSON file is not provided[0m
+[0m[ INFO] [1783509608.872063815]: ROS Node Namespace: camera[0m
+[0m[ INFO] [1783509608.872111914]: Device Name: Intel RealSense D435[0m
+[0m[ INFO] [1783509608.872145195]: Device Serial No: 135522077961[0m
+[0m[ INFO] [1783509608.872178765]: Device physical port: /sys/devices/3610000.xhci/usb2/2-4/2-4.1/2-4.1.4/2-4.1.4:1.0/video4linux/video0[0m
+[0m[ INFO] [1783509608.872213487]: Device FW version: 5.17.0.10[0m
+[0m[ INFO] [1783509608.872287604]: Device Product ID: 0x0B07[0m
+[0m[ INFO] [1783509608.872344951]: Enable PointCloud: On[0m
+[0m[ INFO] [1783509608.872428379]: Align Depth: Off[0m
+[0m[ INFO] [1783509608.872458205]: Sync Mode: On[0m
+[0m[ INFO] [1783509608.872569155]: Device Sensors: [0m
+[0m[ INFO] [1783509608.877752968]: Stereo Module was found.[0m
+[0m[ INFO] [1783509608.886999987]: RGB Camera was found.[0m
+[0m[ INFO] [1783509608.887131802]: (Confidence, 0) sensor isn't supported by current device! -- Skipping...[0m
+[0m[ INFO] [1783509608.887200734]: Add Filter: pointcloud[0m
+[0m[ INFO] [1783509608.887502511]: num_filters: 1[0m
+[0m[ INFO] [1783509608.887546770]: Setting Dynamic reconfig parameters.[0m
+[0m[ INFO] [1783509609.059323995]: Done Setting Dynamic reconfig parameters.[0m
+[0m[ INFO] [1783509609.060390295]: depth stream is enabled - width: 640, height: 480, fps: 6, Format: Z16[0m
+[0m[ INFO] [1783509609.061581402]: color stream is enabled - width: 640, height: 480, fps: 6, Format: RGB8[0m
+[0m[ INFO] [1783509609.061674111]: setupPublishers...[0m
+[0m[ INFO] [1783509609.074501844]: Expected frequency for depth = 6.00000[0m
+[0m[ INFO] [1783509609.226781903]: Expected frequency for color = 6.00000[0m
+[0m[ INFO] [1783509609.340796025]: setupStreams...[0m
+[0m[ INFO] [1783509609.342252811]: insert Depth to Stereo Module[0m
+[0m[ INFO] [1783509609.342401236]: insert Color to RGB Camera[0m
+[0m[ INFO] [1783509609.351944975]: SELECTED BASE:Depth, 0[0m
+[0m[ INFO] [1783509609.407155102]: RealSense Node Is Up![0m
+[0m[ INFO] [1783509615.675476338]: publishing unordered pointcloud.[0m
 nfra_rgb: False
  * /camera/realsense2_camera/infra_width: -1
  * /camera/realsense2_camera/initial_reset: False
@@ -144,10 +144,10 @@ NODES
 
 [1mROS_MASTER_URI=http://localhost:11311[0m
 ]2;/home/agilex/Documents/PhDAlex/AGV-Mapping/catkin_ws/src/scout_pointcloud_accumulator/launch/realsense_mapping.launch http://localhost:11311
-[1mprocess[camera/realsense2_camera_manager-1]: started with pid [2873][0m
-[1mprocess[camera/realsense2_camera-2]: started with pid [2874][0m
-[camera/realsense2_camera_manager-1] killing on exit
+[1mprocess[camera/realsense2_camera_manager-1]: started with pid [7475][0m
+[1mprocess[camera/realsense2_camera-2]: started with pid [7479][0m
 [camera/realsense2_camera-2] killing on exit
+[camera/realsense2_camera_manager-1] killing on exit
 shutting down processing monitor...
 ... shutting down processing monitor complete
 [1mdone[0m

@@ -1,7 +1,7 @@
-[33m[ WARN] [1783509212.752702357]: LeGO-LOAM ground mode enabled in transformFusion: locking integrated odometry roll/pitch.[0m
-[33m[ WARN] [1783509212.804149598]: LeGO-LOAM ground mode enabled in featureAssociation: locking fast odometry roll/pitch.[0m
-[33m[ WARN] [1783509212.948547428]: LeGO-LOAM ground mode enabled: locking roll/pitch to zero for stable Scout mapping.[0m
-[0m[ INFO] [1783509212.788484645]: [1;32m---->[0m Transform Fusion Started.[0m
-[0m[ INFO] [1783509212.921560584]: [1;32m---->[0m Image Projection Started.[0m
-[0m[ INFO] [1783509212.777292937]: [1;32m---->[0m Feature Association Started.[0m
-[0m[ INFO] [1783509212.926509185]: [1;32m---->[0m Map Optimization Started.[0m
+[33m[ WARN] [1783509610.992933237]: LeGO-LOAM ground mode enabled in transformFusion: locking integrated odometry roll/pitch.[0m
+[33m[ WARN] [1783509611.048067680]: LeGO-LOAM ground mode enabled in featureAssociation: locking fast odometry roll/pitch.[0m
+[33m[ WARN] [1783509611.189548889]: LeGO-LOAM ground mode enabled: locking roll/pitch to zero for stable Scout mapping.[0m
+[0m[ INFO] [1783509611.046457989]: [1;32m---->[0m Transform Fusion Started.[0m
+[0m[ INFO] [1783509611.157765653]: [1;32m---->[0m Image Projection Started.[0m
+[0m[ INFO] [1783509611.005205034]: [1;32m---->[0m Feature Association Started.[0m
+[0m[ INFO] [1783509611.128158349]: [1;32m---->[0m Map Optimization Started.[0m

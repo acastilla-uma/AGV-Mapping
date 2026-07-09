@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.0.2)
 project(scout_pointcloud_accumulator)
 
 find_package(catkin REQUIRED COMPONENTS
+  geometry_msgs
   roscpp
   rospy
   sensor_msgs
@@ -17,7 +18,7 @@ find_package(catkin REQUIRED COMPONENTS
 find_package(PCL REQUIRED)
 
 catkin_package(
-  CATKIN_DEPENDS roscpp rospy sensor_msgs pcl_ros pcl_conversions tf tf2_ros tf2_sensor_msgs visualization_msgs std_srvs
+  CATKIN_DEPENDS geometry_msgs roscpp rospy sensor_msgs pcl_ros pcl_conversions tf tf2_ros tf2_sensor_msgs visualization_msgs std_srvs
 )
 
 include_directories(
@@ -39,6 +40,7 @@ catkin_install_python(PROGRAMS
   scripts/camera_lidar_calibration_viewer.py
   scripts/camera_lidar_calibration_env.py
   scripts/agv_direction_marker.py
+  scripts/mapping_quality_eval.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 

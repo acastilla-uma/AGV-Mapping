@@ -23,6 +23,28 @@ if DISPLAY= mapping_validate_rviz_environment >"$TMP_DIR/rviz.out" 2>&1; then
 fi
 grep -q 'RVIZ=false' "$TMP_DIR/rviz.out" || fail "headless diagnostic missing"
 
+mapping_validate_bool ENABLE_CAMERA true || fail "valid boolean rejected"
+if mapping_validate_bool ENABLE_CAMERA yes >"$TMP_DIR/bool.out" 2>&1; then
+  fail "invalid boolean accepted"
+fi
+grep -q 'true.*false' "$TMP_DIR/bool.out" || fail "boolean diagnostic missing"
+
+mapping_validate_choice CAMERA_OUTLIER_FILTER sor none sor ror || fail "valid outlier filter rejected"
+if mapping_validate_choice CAMERA_OUTLIER_FILTER median none sor ror >"$TMP_DIR/choice.out" 2>&1; then
+  fail "invalid outlier filter accepted"
+fi
+grep -q 'none sor ror' "$TMP_DIR/choice.out" || fail "choice diagnostic missing"
+
+mapping_validate_number_min CAMERA_MAX_RANGE 3.0 0 false || fail "valid positive number rejected"
+if mapping_validate_number_min CAMERA_MAX_RANGE 0 0 false >"$TMP_DIR/number.out" 2>&1; then
+  fail "non-positive max range accepted"
+fi
+mapping_validate_less_than CAMERA_MIN_RANGE 0.2 CAMERA_MAX_RANGE 3.0 || fail "valid range rejected"
+if mapping_validate_less_than CAMERA_MIN_RANGE 3.0 CAMERA_MAX_RANGE 3.0 >"$TMP_DIR/range.out" 2>&1; then
+  fail "invalid camera range accepted"
+fi
+grep -q 'CAMERA_MIN_RANGE' "$TMP_DIR/range.out" || fail "range diagnostic missing"
+
 cat > "$TMP_DIR/rostopic-ok" <<'EOF'
 #!/usr/bin/env bash
 exit 0
@@ -129,6 +151,20 @@ grep -q 'USE_ALIGNED_DEPTH_FOR_CAMERA="${USE_ALIGNED_DEPTH_FOR_CAMERA:-false}"' 
   "$ROOT_DIR/catkin_ws/scripts/start_lidar_mapping.sh" || fail "unstable aligned-depth path restored"
 grep -q 'REALSENSE_ENABLE_POINTCLOUD="${REALSENSE_ENABLE_POINTCLOUD:-true}"' \
   "$ROOT_DIR/catkin_ws/scripts/start_lidar_mapping.sh" || fail "native pointcloud path disabled"
+grep -q 'MAPPING_PROFILE="${MAPPING_PROFILE:-baseline}"' \
+  "$ROOT_DIR/catkin_ws/scripts/start_lidar_mapping.sh" || fail "baseline mapping profile default missing"
+grep -q 'DEFAULT_REALSENSE_FILTERS="decimation,spatial"' \
+  "$ROOT_DIR/catkin_ws/scripts/start_lidar_mapping.sh" || fail "quality RealSense filter profile missing"
+grep -q 'CAMERA_OUTLIER_FILTER="${CAMERA_OUTLIER_FILTER:-$DEFAULT_CAMERA_OUTLIER_FILTER}"' \
+  "$ROOT_DIR/catkin_ws/scripts/start_lidar_mapping.sh" || fail "camera outlier env default missing"
+grep -q 'mapping_validate_choice CAMERA_OUTLIER_FILTER "$CAMERA_OUTLIER_FILTER" none sor ror' \
+  "$ROOT_DIR/catkin_ws/scripts/start_lidar_mapping.sh" || fail "outlier filter validation missing"
+grep -q 'camera_outlier_filter:="$CAMERA_OUTLIER_FILTER"' \
+  "$ROOT_DIR/catkin_ws/scripts/start_lidar_mapping.sh" || fail "outlier filter is not passed to accumulator"
+grep -q 'save_camera_diagnostic:="$SAVE_CAMERA_DIAGNOSTIC"' \
+  "$ROOT_DIR/catkin_ws/scripts/start_lidar_mapping.sh" || fail "camera diagnostic save flag is not passed"
+grep -q 'run_git_commit:="$RUN_GIT_COMMIT"' \
+  "$ROOT_DIR/catkin_ws/scripts/start_lidar_mapping.sh" || fail "git commit is not passed to accumulator"
 grep -q 'CAMERA_VISUALIZATION_FRAME="${CAMERA_VISUALIZATION_FRAME:-camera_depth_optical_frame}"' \
   "$ROOT_DIR/catkin_ws/scripts/start_lidar_mapping.sh" || fail "camera visualization is not isolated from the map frame"
 grep -q 'camera_visualization_frame:="$CAMERA_VISUALIZATION_FRAME"' \

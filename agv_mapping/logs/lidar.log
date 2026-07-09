@@ -1,4 +1,4 @@
-[0m[ INFO] [1783591351.342277837]: Initializing nodelet with 8 worker threads.[0m
+[0m[ INFO] [1783591233.288075887]: Initializing nodelet with 8 worker threads.[0m
 0.000 2.304 4.608 6.912 9.216 11.520 13.824 16.128 18.432 20.736 23.040 25.344 27.648 29.952 32.256 34.560 55.296 57.600 59.904 62.208 64.512 66.816 69.120 71.424 73.728 76.032 78.336 80.640 82.944 85.248 87.552 89.856 
 110.592 112.896 115.200 117.504 119.808 122.112 124.416 126.720 129.024 131.328 133.632 135.936 138.240 140.544 142.848 145.152 165.888 168.192 170.496 172.800 175.104 177.408 179.712 182.016 184.320 186.624 188.928 191.232 193.536 195.840 198.144 200.448 
 221.184 223.488 225.792 228.096 230.400 232.704 235.008 237.312 239.616 241.920 244.224 246.528 248.832 251.136 253.440 255.744 276.480 278.784 281.088 283.392 285.696 288.000 290.304 292.608 294.912 297.216 299.520 301.824 304.128 306.432 308.736 311.040 
@@ -11,69 +11,67 @@
 995.328 997.632 999.936 1002.240 1004.544 1006.848 1009.152 1011.456 1013.760 1016.064 1018.368 1020.672 1022.976 1025.280 1027.584 1029.888 1050.624 1052.928 1055.232 1057.536 1059.840 1062.144 1064.448 1066.752 1069.056 1071.360 1073.664 1075.968 1078.272 1080.576 1082.880 1085.184 
 1105.920 1108.224 1110.528 1112.832 1115.136 1117.440 1119.744 1122.048 1124.352 1126.656 1128.960 1131.264 1133.568 1135.872 1138.176 1140.480 1161.216 1163.520 1165.824 1168.128 1170.432 1172.736 1175.040 1177.344 1179.648 1181.952 1184.256 1186.560 1188.864 1191.168 1193.472 1195.776 
 1216.512 1218.816 1221.120 1223.424 1225.728 1228.032 1230.336 1232.640 1234.944 1237.248 1239.552 1241.856 1244.160 1246.464 1248.768 1251.072 1271.808 1274.112 1276.416 1278.720 1281.024 1283.328 1285.632 1287.936 1290.240 1292.544 1294.848 1297.152 1299.456 1301.760 1304.064 1306.368 
-[0m[ INFO] [1783591351.455580176]: correction angles: /home/agilex/Documents/PhDAlex/AGV-Mapping/catkin_ws/src/velodyne/velodyne_pointcloud/params/VLP16db.yaml[0m
-[0m[ INFO] [1783591351.466581934]: laser_ring[ 0] =  0, angle = -0.261799[0m
-[0m[ INFO] [1783591351.466669110]: laser_ring[ 2] =  1, angle = -0.226893[0m
-[0m[ INFO] [1783591351.466777345]: laser_ring[ 4] =  2, angle = -0.191986[0m
-[0m[ INFO] [1783591351.466810372]: laser_ring[ 6] =  3, angle = -0.157080[0m
-[0m[ INFO] [1783591351.466854152]: laser_ring[ 8] =  4, angle = -0.122173[0m
-[0m[ INFO] [1783591351.466885643]: laser_ring[10] =  5, angle = -0.087266[0m
-[0m[ INFO] [1783591351.466945361]: laser_ring[12] =  6, angle = -0.052360[0m
-[0m[ INFO] [1783591351.466985108]: laser_ring[14] =  7, angle = -0.017453[0m
-[0m[ INFO] [1783591351.467022392]: laser_ring[ 1] =  8, angle = +0.017453[33m[ WARN] [1783591352.646272956]: Velodyne poll() timeout[0m
-[31m[ERROR] [1783591352.646651904]: DriverNodelet::devicePoll - Failed to poll device.[0m
-[33m[ WARN] [1783591353.648171460]: Velodyne poll() timeout[0m
-[31m[ERROR] [1783591353.648522437]: DriverNodelet::devicePoll - Failed to poll device.[0m
-[33m[ WARN] [1783591354.649863156]: Velodyne poll() timeout[0m
-[31m[ERROR] [1783591354.650211893]: DriverNodelet::devicePoll - Failed to poll device.[0m
-[33m[ WARN] [1783591355.651557187]: Velodyne poll() timeout[0m
-[31m[ERROR] [1783591355.651850879]: DriverNodelet::devicePoll - Failed to poll device.[0m
-[33m[ WARN] [1783591356.653294804]: Velodyne poll() timeout[0m
-[31m[ERROR] [1783591356.653594993]: DriverNodelet::devicePoll - Failed to poll device.[0m
-[33m[ WARN] [1783591357.654910741]: Velodyne poll() timeout[0m
-[31m[ERROR] [1783591357.655220563]: DriverNodelet::devicePoll - Failed to poll device.[0m
-[33m[ WARN] [1783591358.656660896]: Velodyne poll() timeout[0m
-[31m[ERROR] [1783591358.656966685]: DriverNodelet::devicePoll - Failed to poll device.[0m
-[33m[ WARN] [1783591359.658247287]: Velodyne poll() timeout[0m
-[31m[ERROR] [1783591359.662183760]: DriverNodelet::devicePoll - Failed to poll device.[0m
-[33m[ WARN] [1783591360.663517867]: Velodyne poll() timeout[0m
-[31m[ERROR] [1783591360.663803303]: DriverNodelet::devicePoll - Failed to poll device.[0m
-[33m[ WARN] [1783591361.665246731]: Velodyne poll() timeout[0m
-[31m[ERROR] [1783591361.665558665]: DriverNodelet::devicePoll - Failed to poll device.[0m
-[33m[ WARN] [1783591362.666902081]: Velodyne poll() timeout[0m
-[31m[ERROR] [1783591362.667208255]: DriverNodelet::devicePoll - Failed to poll device.[0m
-[33m[ WARN] [1783591363.668496718]: Velodyne poll() timeout[0m
-[31m[ERROR] [1783591363.668861041]: DriverNodelet::devicePoll - Failed to poll device.[0m
-[33m[ WARN] [1783591364.670198497]: Velodyne poll() timeout[0m
-[31m[ERROR] [1783591364.670549859]: DriverNodelet::devicePoll - Failed to poll device.[0m
-[33m[ WARN] [1783591365.675403488]: Velodyne poll() timeout[0m
-[31m[ERROR] [1783591365.675748065]: DriverNodelet::devicePoll - Failed to poll device.[0m
+[0m[ INFO] [1783591233.427337474]: correction angles: /home/agilex/Documents/PhDAlex/AGV-Mapping/catkin_ws/src/velodyne/velodyne_pointcloud/params/VLP16db.yaml[0m
+[0m[ INFO] [1783591233.441350982]: laser_ring[ 0] =  0, angle = -0.261799[0m
+[0m[ INFO] [1783591233.441412460]: laser_ring[ 2] =  1, angle = -0.226893[0m
+[0m[ INFO] [1783591233.441438542]: laser_ring[ 4] =  2, angle = -0.191986[0m
+[0m[ INFO] [1783591233.441463216]: laser_ring[ 6] =  3, angle = -0.157080[0m
+[0m[ INFO] [1783591233.441487923]: laser_ring[ 8] =  4, angle = -0.122173[0m
+[0m[ INFO] [1783591233.441551513]: laser_ring[10] =  5, angle = -0.087266[0m
+[0m[ INFO] [1783591233.441612415]: laser_ring[12] =  6, angle = -0.052360[0m
+[0m[ INFO] [1783591233.441648034]: laser_ring[14] =  7, angle = -0.017453[0m
+[0m[ INFO] [1783591233.441672741]: laser_ring[ 1] =  8, angle = +0.017453[33m[ WARN] [1783591234.613359837]: Velodyne poll() timeout[0m
+[31m[ERROR] [1783591234.613904786]: DriverNodelet::devicePoll - Failed to poll device.[0m
+[33m[ WARN] [1783591235.615417430]: Velodyne poll() timeout[0m
+[31m[ERROR] [1783591235.615739733]: DriverNodelet::devicePoll - Failed to poll device.[0m
+[33m[ WARN] [1783591236.617182160]: Velodyne poll() timeout[0m
+[31m[ERROR] [1783591236.617528081]: DriverNodelet::devicePoll - Failed to poll device.[0m
+[33m[ WARN] [1783591237.618868126]: Velodyne poll() timeout[0m
+[31m[ERROR] [1783591237.619143352]: DriverNodelet::devicePoll - Failed to poll device.[0m
+[33m[ WARN] [1783591238.620477376]: Velodyne poll() timeout[0m
+[31m[ERROR] [1783591238.620861605]: DriverNodelet::devicePoll - Failed to poll device.[0m
+[33m[ WARN] [1783591239.622223468]: Velodyne poll() timeout[0m
+[31m[ERROR] [1783591239.622634548]: DriverNodelet::devicePoll - Failed to poll device.[0m
+[33m[ WARN] [1783591240.627189451]: Velodyne poll() timeout[0m
+[31m[ERROR] [1783591240.627545197]: DriverNodelet::devicePoll - Failed to poll device.[0m
+[33m[ WARN] [1783591241.628880202]: Velodyne poll() timeout[0m
+[31m[ERROR] [1783591241.629247725]: DriverNodelet::devicePoll - Failed to poll device.[0m
+[33m[ WARN] [1783591242.630624971]: Velodyne poll() timeout[0m
+[31m[ERROR] [1783591242.631006095]: DriverNodelet::devicePoll - Failed to poll device.[0m
+[33m[ WARN] [1783591243.632230811]: Velodyne poll() timeout[0m
+[31m[ERROR] [1783591243.632573147]: DriverNodelet::devicePoll - Failed to poll device.[0m
+[33m[ WARN] [1783591244.633945009]: Velodyne poll() timeout[0m
+[31m[ERROR] [1783591244.634384219]: DriverNodelet::devicePoll - Failed to poll device.[0m
+[33m[ WARN] [1783591245.639244796]: Velodyne poll() timeout[0m
+[31m[ERROR] [1783591245.639637282]: DriverNodelet::devicePoll - Failed to poll device.[0m
+[33m[ WARN] [1783591246.641067350]: Velodyne poll() timeout[0m
+[31m[ERROR] [1783591246.641437401]: DriverNodelet::devicePoll - Failed to poll device.[0m
 [0m
-[0m[ INFO] [1783591351.467126690]: laser_ring[ 3] =  9, angle = +0.052360[0m
-[0m[ INFO] [1783591351.467162405]: laser_ring[ 5] = 10, angle = +0.087266[0m
-[0m[ INFO] [1783591351.467206954]: laser_ring[ 7] = 11, angle = +0.122173[0m
-[0m[ INFO] [1783591351.467246861]: laser_ring[ 9] = 12, angle = +0.157080[0m
-[0m[ INFO] [1783591351.467287729]: laser_ring[11] = 13, angle = +0.191986[0m
-[0m[ INFO] [1783591351.467323829]: laser_ring[13] = 14, angle = +0.226893[0m
-[0m[ INFO] [1783591351.467390267]: laser_ring[15] = 15, angle = +0.261799[0m
-[0m[ INFO] [1783591351.468081789]: Number of lasers: 16.[0m
-[0m[ INFO] [1783591351.537418254]: Reconfigure request.[0m
-[0m[ INFO] [1783591351.537520919]: Target frame ID now: [0m
-[0m[ INFO] [1783591351.537562940]: Fixed frame ID now: [0m
-[0m[ INFO] [1783591351.537700073]: Initialized container with min_range: 0.4, max_range: 100, target_frame: , fixed_frame: , init_width: 0, init_height: 1, is_dense: 1, scans_per_packet: 384[0m
-[0m[ INFO] [1783591351.592269491]: Velodyne VLP-16 rotating at 600 RPM[0m
-[0m[ INFO] [1783591351.593400191]: publishing 76 packets per scan[0m
-[0m[ INFO] [1783591351.612021398]: Cut at specific angle feature deactivated.[0m
-[0m[ INFO] [1783591351.632831583]: Reconfigure Request[0m
-[0m[ INFO] [1783591351.636301003]: expected frequency: 9.921 (Hz)[0m
-[0m[ INFO] [1783591351.642499101]: Only accepting packets from IP address: 192.168.8.201[0m
-[0m[ INFO] [1783591351.642657836]: Opening UDP socket: port 2368[0m
-... logging to /home/agilex/.ros/log/4bd0bda8-7b7d-11f1-8c5b-48b02d3c846d/roslaunch-xavier-29738.log
+[0m[ INFO] [1783591233.441766638]: laser_ring[ 3] =  9, angle = +0.052360[0m
+[0m[ INFO] [1783591233.441791312]: laser_ring[ 5] = 10, angle = +0.087266[0m
+[0m[ INFO] [1783591233.441820979]: laser_ring[ 7] = 11, angle = +0.122173[0m
+[0m[ INFO] [1783591233.441849654]: laser_ring[ 9] = 12, angle = +0.157080[0m
+[0m[ INFO] [1783591233.441873656]: laser_ring[11] = 13, angle = +0.191986[0m
+[0m[ INFO] [1783591233.441900699]: laser_ring[13] = 14, angle = +0.226893[0m
+[0m[ INFO] [1783591233.441924477]: laser_ring[15] = 15, angle = +0.261799[0m
+[0m[ INFO] [1783591233.442692231]: Number of lasers: 16.[0m
+[0m[ INFO] [1783591233.511224550]: Reconfigure request.[0m
+[0m[ INFO] [1783591233.511341010]: Target frame ID now: [0m
+[0m[ INFO] [1783591233.511393303]: Fixed frame ID now: [0m
+[0m[ INFO] [1783591233.511535396]: Initialized container with min_range: 0.4, max_range: 100, target_frame: , fixed_frame: , init_width: 0, init_height: 1, is_dense: 1, scans_per_packet: 384[0m
+[0m[ INFO] [1783591233.573418821]: Velodyne VLP-16 rotating at 600 RPM[0m
+[0m[ INFO] [1783591233.574848782]: publishing 76 packets per scan[0m
+[0m[ INFO] [1783591233.582548787]: Cut at specific angle feature deactivated.[0m
+[0m[ INFO] [1783591233.597044005]: Reconfigure Request[0m
+[0m[ INFO] [1783591233.600552919]: expected frequency: 9.921 (Hz)[0m
+[0m[ INFO] [1783591233.609359270]: Only accepting packets from IP address: 192.168.8.201[0m
+[0m[ INFO] [1783591233.609470960]: Opening UDP socket: port 2368[0m
+... logging to /home/agilex/.ros/log/0541e34e-7b7d-11f1-9965-48b02d3c846d/roslaunch-xavier-29055.log
 Checking log directory for disk usage. This may take a while.
 Press Ctrl-C to interrupt
 Done checking log file disk usage. Usage is <1GB.
 ]2;/home/agilex/Documents/PhDAlex/AGV-Mapping/catkin_ws/src/scout_base/scout_bringup/launch/open_rslidar.launch
-[1mstarted roslaunch server http://xavier:33561/[0m
+[1mstarted roslaunch server http://xavier:44927/[0m
 
 SUMMARY
 ========
@@ -125,21 +123,21 @@ NODES
     velodyne_nodelet_manager_transform (nodelet/nodelet)
 
 auto-starting new master
-[1mprocess[master]: started with pid [29799][0m
+[1mprocess[master]: started with pid [29123][0m
 [1mROS_MASTER_URI=http://localhost:11311[0m
 ]2;/home/agilex/Documents/PhDAlex/AGV-Mapping/catkin_ws/src/scout_base/scout_bringup/launch/open_rslidar.launch http://localhost:11311
-[1msetting /run_id to 4bd0bda8-7b7d-11f1-8c5b-48b02d3c846d[0m
-[1mprocess[rosout-1]: started with pid [29818][0m
+[1msetting /run_id to 0541e34e-7b7d-11f1-9965-48b02d3c846d[0m
+[1mprocess[rosout-1]: started with pid [29155][0m
 started core service [/rosout]
-[1mprocess[velodyne_nodelet_manager-2]: started with pid [29831][0m
-[1mprocess[velodyne_nodelet_manager_driver-3]: started with pid [29836][0m
-[1mprocess[velodyne_nodelet_manager_transform-4]: started with pid [29837][0m
-[1mprocess[velodyne_nodelet_manager_laserscan-5]: started with pid [29844][0m
-[1mprocess[pointcloud_to_laserscan-6]: started with pid [29855][0m
-[1mprocess[base_link_to_laser-7]: started with pid [29862][0m
+[1mprocess[velodyne_nodelet_manager-2]: started with pid [29177][0m
+[1mprocess[velodyne_nodelet_manager_driver-3]: started with pid [29181][0m
+[1mprocess[velodyne_nodelet_manager_transform-4]: started with pid [29182][0m
+[1mprocess[velodyne_nodelet_manager_laserscan-5]: started with pid [29188][0m
+[1mprocess[pointcloud_to_laserscan-6]: started with pid [29194][0m
+[1mprocess[base_link_to_laser-7]: started with pid [29213][0m
+[pointcloud_to_laserscan-6] killing on exit
 [base_link_to_laser-7] killing on exit
 [velodyne_nodelet_manager_laserscan-5] killing on exit
-[pointcloud_to_laserscan-6] killing on exit
 [velodyne_nodelet_manager_transform-4] killing on exit
 [velodyne_nodelet_manager_driver-3] killing on exit
 [velodyne_nodelet_manager-2] killing on exit

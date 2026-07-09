@@ -29,6 +29,21 @@
   <arg name="output_pcd" default="/tmp/accumulated_cloud.pcd" />
   <arg name="save_lidar" default="true" />
   <arg name="save_camera" default="true" />
+  <arg name="save_camera_diagnostic" default="true" />
+  <arg name="save_fused_quality_alias" default="true" />
+  <arg name="mapping_profile" default="baseline" />
+  <arg name="run_git_commit" default="unknown" />
+  <arg name="capture_manifest" default="" />
+  <arg name="camera_outlier_filter" default="none" />
+  <arg name="camera_sor_mean_k" default="24" />
+  <arg name="camera_sor_stddev_mul" default="1.0" />
+  <arg name="camera_ror_radius" default="0.08" />
+  <arg name="camera_ror_min_neighbors" default="3" />
+  <arg name="camera_min_points" default="30" />
+  <arg name="camera_keyframe_min_translation" default="0.0" />
+  <arg name="camera_keyframe_min_rotation_deg" default="0.0" />
+  <arg name="camera_sync_tolerance" default="0.03" />
+  <arg name="camera_sync_queue_size" default="10" />
   <arg name="rviz" default="true" />
   <arg name="show_agv_direction" default="true" />
   <arg name="agv_frame" default="base_link" />
@@ -74,6 +89,21 @@
     <param name="output_pcd" value="$(arg output_pcd)" />
     <param name="save_lidar" value="$(arg save_lidar)" />
     <param name="save_camera" value="$(arg save_camera)" />
+    <param name="save_camera_diagnostic" value="$(arg save_camera_diagnostic)" />
+    <param name="save_fused_quality_alias" value="$(arg save_fused_quality_alias)" />
+    <param name="mapping_profile" value="$(arg mapping_profile)" />
+    <param name="run_git_commit" value="$(arg run_git_commit)" />
+    <param name="capture_manifest" value="$(arg capture_manifest)" />
+    <param name="camera_outlier_filter" value="$(arg camera_outlier_filter)" />
+    <param name="camera_sor_mean_k" value="$(arg camera_sor_mean_k)" />
+    <param name="camera_sor_stddev_mul" value="$(arg camera_sor_stddev_mul)" />
+    <param name="camera_ror_radius" value="$(arg camera_ror_radius)" />
+    <param name="camera_ror_min_neighbors" value="$(arg camera_ror_min_neighbors)" />
+    <param name="camera_min_points" value="$(arg camera_min_points)" />
+    <param name="camera_keyframe_min_translation" value="$(arg camera_keyframe_min_translation)" />
+    <param name="camera_keyframe_min_rotation_deg" value="$(arg camera_keyframe_min_rotation_deg)" />
+    <param name="camera_sync_tolerance" value="$(arg camera_sync_tolerance)" />
+    <param name="camera_sync_queue_size" value="$(arg camera_sync_queue_size)" />
   </node>
 
   <node if="$(arg show_agv_direction)" pkg="scout_pointcloud_accumulator"

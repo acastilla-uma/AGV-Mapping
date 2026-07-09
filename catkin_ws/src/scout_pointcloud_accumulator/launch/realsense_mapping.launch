@@ -17,6 +17,7 @@
   <arg name="initial_reset" default="true" />
   <arg name="enable_pointcloud" default="false" />
   <arg name="align_depth" default="false" />
+  <arg name="enable_sync" default="false" />
 
   <include file="$(find realsense2_camera)/launch/rs_camera.launch">
     <arg name="camera" value="$(arg camera)" />
@@ -30,7 +31,7 @@
     <arg name="pointcloud_texture_index" value="$(arg pointcloud_texture_index)" />
     <arg name="allow_no_texture_points" value="$(arg allow_no_texture_points)" />
     <arg name="align_depth" value="$(arg align_depth)" />
-    <arg name="enable_sync" value="false" />
+    <arg name="enable_sync" value="$(arg enable_sync)" />
     <arg name="ordered_pc" value="false" />
     <arg name="depth_width" value="$(arg depth_width)" />
     <arg name="depth_height" value="$(arg depth_height)" />

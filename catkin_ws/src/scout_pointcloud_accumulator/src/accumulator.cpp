@@ -1,4 +1,5 @@
 #include <ros/ros.h>
+#include <geometry_msgs/TransformStamped.h>
 #include <sensor_msgs/PointCloud2.h>
 #include <sensor_msgs/Image.h>
 #include <sensor_msgs/CameraInfo.h>
@@ -6,6 +7,8 @@
 #include <pcl_conversions/pcl_conversions.h>
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
+#include <pcl/filters/radius_outlier_removal.h>
+#include <pcl/filters/statistical_outlier_removal.h>
 #include <pcl/filters/voxel_grid.h>
 #include <pcl/io/pcd_io.h>
 #include <tf2_ros/transform_listener.h>
@@ -14,13 +17,20 @@
 #include <std_srvs/Empty.h>
 #include <algorithm>
 #include <cerrno>
+#include <cctype>
 #include <cmath>
 #include <cstdio>
 #include <cstdint>
 #include <cstring>
+#include <deque>
 #include <fstream>
+#include <iomanip>
+#include <limits>
 #include <mutex>
+#include <sstream>
+#include <stdexcept>
 #include <string>
+#include <sys/stat.h>
 #include <vector>
 
 class AccumulatorNode {
@@ -53,13 +63,34 @@ public:
     nh_.param<std::string>("output_pcd", output_pcd_, "/tmp/accumulated_cloud.pcd");
     nh_.param<bool>("save_lidar", save_lidar_, true);
     nh_.param<bool>("save_camera", save_camera_, true);
+    nh_.param<bool>("save_camera_diagnostic", save_camera_diagnostic_, true);
+    nh_.param<bool>("save_fused_quality_alias", save_fused_quality_alias_, true);
     nh_.param<double>("camera_intensity", camera_intensity_, 0.0);
     nh_.param<double>("transform_timeout", transform_timeout_, 0.5);
     nh_.param<bool>("use_latest_tf_on_failure", use_latest_tf_on_failure_, false);
+    nh_.param<std::string>("mapping_profile", mapping_profile_, "baseline");
+    nh_.param<std::string>("run_git_commit", run_git_commit_, "unknown");
+    nh_.param<std::string>("capture_manifest", capture_manifest_, "");
+    nh_.param<std::string>("camera_outlier_filter", camera_outlier_filter_, "none");
+    nh_.param<int>("camera_sor_mean_k", camera_sor_mean_k_, 24);
+    nh_.param<double>("camera_sor_stddev_mul", camera_sor_stddev_mul_, 1.0);
+    nh_.param<double>("camera_ror_radius", camera_ror_radius_, 0.08);
+    nh_.param<int>("camera_ror_min_neighbors", camera_ror_min_neighbors_, 3);
+    nh_.param<int>("camera_min_points", camera_min_points_, 30);
+    nh_.param<double>("camera_keyframe_min_translation", camera_keyframe_min_translation_, 0.0);
+    nh_.param<double>("camera_keyframe_min_rotation_deg", camera_keyframe_min_rotation_deg_, 0.0);
+    nh_.param<double>("camera_sync_tolerance", camera_sync_tolerance_, 0.03);
+    nh_.param<int>("camera_sync_queue_size", camera_sync_queue_size_, 10);
+
+    validateParametersOrThrow();
 
     ROS_INFO("PCD save sources: LiDAR=%s Camera=%s",
              save_lidar_ ? "true" : "false",
              save_camera_ ? "true" : "false");
+    ROS_INFO("Mapping profile=%s git_commit=%s capture_manifest=%s",
+             mapping_profile_.c_str(),
+             run_git_commit_.c_str(),
+             capture_manifest_.empty() ? "<none>" : capture_manifest_.c_str());
 
     if (enable_lidar_) {
       lidar_sub_ = nh_.subscribe(lidar_topic_, 10, &AccumulatorNode::lidarCallback, this);
@@ -84,6 +115,17 @@ public:
                camera_accumulate_rate_, camera_visualization_rate_,
                camera_voxel_size_, camera_visualization_voxel_size_,
                camera_min_range_, camera_max_range_);
+      ROS_INFO("RealSense quality gates: min_points=%d outlier_filter=%s sor(mean_k=%d stddev=%.3f) ror(radius=%.3f min_neighbors=%d) keyframe(min_translation=%.3f min_rotation_deg=%.3f) sync_tolerance=%.3fs queue=%d",
+               camera_min_points_,
+               camera_outlier_filter_.c_str(),
+               camera_sor_mean_k_,
+               camera_sor_stddev_mul_,
+               camera_ror_radius_,
+               camera_ror_min_neighbors_,
+               camera_keyframe_min_translation_,
+               camera_keyframe_min_rotation_deg_,
+               camera_sync_tolerance_,
+               camera_sync_queue_size_);
     }
     if (!enable_lidar_ && !enable_camera_) {
       ROS_WARN("Both enable_lidar and enable_camera are false; no clouds will be accumulated.");
@@ -92,6 +134,7 @@ public:
     pub_ = nh_.advertise<sensor_msgs::PointCloud2>("/accumulated_points", 1, true);
     lidar_pub_ = nh_.advertise<sensor_msgs::PointCloud2>("/accumulated_lidar_points", 1, true);
     camera_pub_ = nh_.advertise<sensor_msgs::PointCloud2>("/accumulated_camera_points", 1, true);
+    camera_diagnostic_pub_ = nh_.advertise<sensor_msgs::PointCloud2>("/accumulated_camera_diagnostic_points", 1, true);
     camera_instant_pub_ = nh_.advertise<sensor_msgs::PointCloud2>("/camera/colored_points", 1, false);
     save_srv_ = nh_.advertiseService("save_accumulated", &AccumulatorNode::saveService, this);
   }
@@ -102,12 +145,14 @@ public:
 
   void cameraColorCallback(const sensor_msgs::ImageConstPtr& image_msg) {
     std::lock_guard<std::mutex> lock(color_mutex_);
-    latest_color_image_ = image_msg;
+    color_image_queue_.push_back(image_msg);
+    trimSyncQueue(color_image_queue_);
   }
 
   void cameraInfoCallback(const sensor_msgs::CameraInfoConstPtr& info_msg) {
     std::lock_guard<std::mutex> lock(color_mutex_);
-    latest_camera_info_ = info_msg;
+    camera_info_queue_.push_back(info_msg);
+    trimSyncQueue(camera_info_queue_);
   }
 
   void cameraDepthCallback(const sensor_msgs::ImageConstPtr& depth_msg) {
@@ -129,6 +174,7 @@ public:
 
   template <typename BuildCloudFn>
   void handleCameraFrame(const ros::Time& stamp, BuildCloudFn build_cloud) {
+    ++camera_frames_received_;
     bool should_accumulate = true;
     if (camera_accumulate_rate_ > 0.0 && !last_camera_accumulation_time_.isZero()) {
       const double dt = (stamp - last_camera_accumulation_time_).toSec();
@@ -142,22 +188,27 @@ public:
     }
 
     if (!should_accumulate && !should_visualize) {
+      ++camera_frames_skipped_rate_;
+      logCameraCounters();
       return;
     }
 
     pcl::PointCloud<pcl::PointXYZRGB> source_rgb;
     if (!build_cloud(source_rgb)) {
+      ++camera_frames_rejected_build_;
       ROS_WARN_THROTTLE(5.0, "RealSense camera frame did not produce valid RGB points.");
+      logCameraCounters();
       return;
     }
 
-    if (processCameraRGBCloud(source_rgb, stamp, should_accumulate, should_visualize)) {
-      if (should_visualize) {
+    const uint64_t visualized_before = camera_frames_visualized_;
+    const uint64_t accumulated_before = camera_frames_accumulated_quality_;
+    processCameraRGBCloud(source_rgb, stamp, should_accumulate, should_visualize);
+    if (should_visualize && camera_frames_visualized_ > visualized_before) {
         last_camera_visualization_time_ = stamp;
-      }
-      if (should_accumulate) {
+    }
+    if (should_accumulate && camera_frames_accumulated_quality_ > accumulated_before) {
         last_camera_accumulation_time_ = stamp;
-      }
     }
   }
 
@@ -222,6 +273,8 @@ public:
                              const bool visualize) {
     if (source_rgb.empty()) {
       ROS_WARN_THROTTLE(5.0, "RealSense source RGB cloud is empty.");
+      ++camera_frames_rejected_empty_;
+      logCameraCounters();
       return false;
     }
 
@@ -246,6 +299,7 @@ public:
         std::lock_guard<std::mutex> lock(mutex_);
         publishCloud(instant_transformed_rgb, camera_instant_pub_, camera_visualization_frame_, stamp);
         visualization_succeeded = true;
+        ++camera_frames_visualized_;
       } catch (tf2::TransformException& ex) {
         ROS_WARN_THROTTLE(5.0, "RealSense visualization transform failed: %s", ex.what());
       }
@@ -260,45 +314,102 @@ public:
       ROS_WARN_THROTTLE(5.0,
                         "RealSense visualization is active, but accumulation is waiting for TF %s <- %s.",
                         target_frame_.c_str(), source_frame.c_str());
+      ++camera_frames_rejected_tf_;
+      logCameraCounters();
       return visualization_succeeded;
     }
 
-    pcl::PointCloud<pcl::PointXYZRGB> accumulate_source_rgb = source_rgb;
-    if (camera_voxel_size_ > 0.0) {
-      applyVoxelFilter(accumulate_source_rgb, camera_voxel_size_);
-    }
-
     sensor_msgs::PointCloud2 source_msg;
-    pcl::toROSMsg(accumulate_source_rgb, source_msg);
+    pcl::toROSMsg(source_rgb, source_msg);
     source_msg.header.stamp = stamp;
-    source_msg.header.frame_id = accumulate_source_rgb.header.frame_id;
+    source_msg.header.frame_id = source_rgb.header.frame_id;
+
+    geometry_msgs::TransformStamped camera_transform;
+    try {
+      camera_transform = lookupTransformForCloud(target_frame_, source_frame, stamp, "RealSense");
+    } catch (tf2::TransformException &ex) {
+      ROS_WARN_THROTTLE(5.0, "RealSense transform failed: %s", ex.what());
+      ++camera_frames_rejected_tf_;
+      logCameraCounters();
+      return false;
+    }
 
     sensor_msgs::PointCloud2 cloud_transformed;
     try {
-      transformCloud(source_msg, cloud_transformed, target_frame_, "RealSense");
-    } catch (tf2::TransformException &ex) {
+      tf2::doTransform(source_msg, cloud_transformed, camera_transform);
+      cloud_transformed.header.frame_id = target_frame_;
+      cloud_transformed.header.stamp = stamp;
+    } catch (tf2::TransformException& ex) {
       ROS_WARN_THROTTLE(5.0, "RealSense transform failed: %s", ex.what());
+      ++camera_frames_rejected_tf_;
+      logCameraCounters();
       return false;
     }
 
-    pcl::PointCloud<pcl::PointXYZRGB> rgb_in;
-    pcl::fromROSMsg(cloud_transformed, rgb_in);
-    removeInvalidPoints(rgb_in);
-    if (rgb_in.empty()) {
+    pcl::PointCloud<pcl::PointXYZRGB> diagnostic_rgb;
+    pcl::fromROSMsg(cloud_transformed, diagnostic_rgb);
+    removeInvalidPoints(diagnostic_rgb);
+    if (diagnostic_rgb.empty()) {
       ROS_WARN_THROTTLE(5.0, "RealSense cloud has no valid RGB points after transform.");
+      ++camera_frames_rejected_empty_;
+      logCameraCounters();
       return false;
+    }
+
+    pcl::PointCloud<pcl::PointXYZRGB> quality_rgb = diagnostic_rgb;
+    std::string reject_reason;
+    bool accepted_for_quality = true;
+
+    if (camera_voxel_size_ > 0.0) {
+      applyVoxelFilter(quality_rgb, camera_voxel_size_);
+    }
+
+    if (accepted_for_quality && camera_min_points_ > 0 &&
+        quality_rgb.size() < static_cast<std::size_t>(camera_min_points_)) {
+      accepted_for_quality = false;
+      reject_reason = "min_points";
+      ++camera_frames_rejected_min_points_;
+    }
+
+    if (accepted_for_quality && !applyCameraOutlierFilter(quality_rgb, reject_reason)) {
+      accepted_for_quality = false;
+      ++camera_frames_rejected_filter_;
+    }
+
+    if (accepted_for_quality &&
+        !isCameraKeyframeAccepted(camera_transform, reject_reason)) {
+      accepted_for_quality = false;
+      ++camera_frames_rejected_keyframe_;
+    }
+
+    std::lock_guard<std::mutex> lock(mutex_);
+    appendAndFilter(accumulated_camera_diagnostic_rgb_, diagnostic_rgb, camera_voxel_size_);
+    publishCloud(accumulated_camera_diagnostic_rgb_, camera_diagnostic_pub_, stamp);
+    ++camera_frames_base_valid_;
+
+    if (!accepted_for_quality) {
+      ROS_INFO_THROTTLE(5.0,
+                        "RealSense camera frame kept in camera_diagnostic but rejected from fused_quality: reason=%s points=%zu",
+                        reject_reason.c_str(),
+                        quality_rgb.size());
+      publishCloud(accumulated_camera_rgb_, camera_pub_, stamp);
+      logCameraCounters();
+      return visualization_succeeded;
     }
 
     pcl::PointCloud<pcl::PointXYZI> xyzi_in;
-    convertRGBToXYZI(rgb_in, xyzi_in);
+    convertRGBToXYZI(quality_rgb, xyzi_in);
 
-    std::lock_guard<std::mutex> lock(mutex_);
-    appendAndFilter(accumulated_camera_rgb_, rgb_in, camera_voxel_size_);
+    appendAndFilter(accumulated_camera_rgb_, quality_rgb, camera_voxel_size_);
     publishCloud(accumulated_camera_rgb_, camera_pub_, stamp);
 
     appendAndFilter(accumulated_camera_, xyzi_in, camera_voxel_size_);
     appendAndFilter(accumulated_, xyzi_in, voxel_size_);
     publishCloud(accumulated_, pub_, stamp);
+    last_camera_keyframe_transform_ = camera_transform;
+    has_last_camera_keyframe_transform_ = true;
+    ++camera_frames_accumulated_quality_;
+    logCameraCounters();
     return true;
   }
 
@@ -310,16 +421,22 @@ public:
   bool saveToFile(const std::string& path) {
     std::lock_guard<std::mutex> lock(mutex_);
 
+    const std::string snapshot_id = makeSnapshotId();
     const std::string lidar_path = appendSuffixToPath(path, "_lidar");
     const std::string camera_path = appendSuffixToPath(path, "_camera");
+    const std::string camera_diagnostic_path = appendSuffixToPath(path, "_camera_diagnostic");
     const std::string fused_path = appendSuffixToPath(path, "_fused");
+    const std::string fused_quality_path = appendSuffixToPath(path, "_fused_quality");
+    const std::string manifest_path = replaceSuffixAndExtension(path, "_manifest", ".json");
 
     bool saved_any = false;
+    std::vector<SavedArtifact> artifacts;
 
     if (save_lidar_ && !accumulated_lidar_.empty()) {
       const pcl::PointCloud<pcl::PointXYZI>& lidar_to_save = accumulated_lidar_;
       if (savePointCloudAtomically(lidar_path, lidar_to_save, "LiDAR-only")) {
         saved_any = true;
+        artifacts.push_back(describeSavedArtifact("lidar", lidar_path));
       }
     } else if (!save_lidar_) {
       ROS_INFO("LiDAR-only save disabled; not saving %s", lidar_path.c_str());
@@ -329,13 +446,27 @@ public:
 
     if (save_camera_ && !accumulated_camera_rgb_.empty()) {
       const pcl::PointCloud<pcl::PointXYZRGB>& camera_to_save = accumulated_camera_rgb_;
-      if (savePointCloudAtomically(camera_path, camera_to_save, "RGB camera-only")) {
+      if (savePointCloudAtomically(camera_path, camera_to_save, "RGB camera quality")) {
         saved_any = true;
+        artifacts.push_back(describeSavedArtifact("camera_quality", camera_path));
       }
     } else if (!save_camera_) {
       ROS_INFO("Camera-only save disabled; not saving %s", camera_path.c_str());
     } else {
       ROS_WARN("Camera-only cloud is empty; not saving %s", camera_path.c_str());
+    }
+
+    if (save_camera_diagnostic_ && !accumulated_camera_diagnostic_rgb_.empty()) {
+      if (savePointCloudAtomically(camera_diagnostic_path,
+                                   accumulated_camera_diagnostic_rgb_,
+                                   "RGB camera diagnostic")) {
+        saved_any = true;
+        artifacts.push_back(describeSavedArtifact("camera_diagnostic", camera_diagnostic_path));
+      }
+    } else if (!save_camera_diagnostic_) {
+      ROS_INFO("Camera diagnostic save disabled; not saving %s", camera_diagnostic_path.c_str());
+    } else {
+      ROS_WARN("Camera diagnostic cloud is empty; not saving %s", camera_diagnostic_path.c_str());
     }
 
     pcl::PointCloud<pcl::PointXYZRGB> fused_rgb;
@@ -351,6 +482,12 @@ public:
       }
       if (savePointCloudAtomically(fused_path, fused_rgb, "fused LiDAR+RGB camera")) {
         saved_any = true;
+        artifacts.push_back(describeSavedArtifact("fused_quality_legacy", fused_path));
+      }
+      if (save_fused_quality_alias_ &&
+          savePointCloudAtomically(fused_quality_path, fused_rgb, "fused_quality LiDAR+RGB camera")) {
+        saved_any = true;
+        artifacts.push_back(describeSavedArtifact("fused_quality", fused_quality_path));
       }
     } else if (!save_lidar_ || !save_camera_) {
       ROS_INFO("Fused save disabled because LiDAR=%s Camera=%s; not saving %s",
@@ -361,10 +498,261 @@ public:
       ROS_WARN("Fused cloud is empty; not saving %s", fused_path.c_str());
     }
 
+    if (saved_any) {
+      if (!writeManifestAtomically(manifest_path, snapshot_id, artifacts)) {
+        ROS_ERROR("Snapshot %s wrote PCD files but failed to publish commit-last manifest %s.",
+                  snapshot_id.c_str(), manifest_path.c_str());
+        return false;
+      }
+      ROS_INFO("Saved coherent snapshot %s with %zu artifacts and manifest %s",
+               snapshot_id.c_str(), artifacts.size(), manifest_path.c_str());
+    }
+
     return saved_any;
   }
 
 private:
+  struct SavedArtifact {
+    std::string role;
+    std::string path;
+    std::string hash_algorithm;
+    std::string hash;
+    long long size_bytes;
+  };
+
+  void validateParametersOrThrow() {
+    const std::string filter = lower(camera_outlier_filter_);
+    camera_outlier_filter_ = filter;
+
+    if (voxel_size_ < 0.0 || lidar_voxel_size_ < 0.0 ||
+        camera_voxel_size_ < 0.0 || camera_visualization_voxel_size_ < 0.0) {
+      throw std::runtime_error("Voxel sizes must be non-negative.");
+    }
+    if (camera_min_range_ > 0.0 && camera_max_range_ > 0.0 &&
+        camera_min_range_ >= camera_max_range_) {
+      throw std::runtime_error("camera_min_range must be smaller than camera_max_range.");
+    }
+    if (camera_depth_pixel_step_ <= 0) {
+      throw std::runtime_error("camera_depth_pixel_step must be positive.");
+    }
+    if (transform_timeout_ < 0.0 || camera_sync_tolerance_ < 0.0) {
+      throw std::runtime_error("transform_timeout and camera_sync_tolerance must be non-negative.");
+    }
+    if (camera_sync_queue_size_ < 1) {
+      throw std::runtime_error("camera_sync_queue_size must be at least 1.");
+    }
+    if (camera_min_points_ < 0) {
+      throw std::runtime_error("camera_min_points must be non-negative.");
+    }
+    if (camera_keyframe_min_translation_ < 0.0 || camera_keyframe_min_rotation_deg_ < 0.0) {
+      throw std::runtime_error("camera keyframe thresholds must be non-negative.");
+    }
+    if (filter != "none" && filter != "sor" && filter != "ror") {
+      throw std::runtime_error("camera_outlier_filter must be one of: none, sor, ror.");
+    }
+    if (filter == "sor" && (camera_sor_mean_k_ < 2 || camera_sor_stddev_mul_ <= 0.0)) {
+      throw std::runtime_error("SOR requires camera_sor_mean_k >= 2 and camera_sor_stddev_mul > 0.");
+    }
+    if (filter == "ror" && (camera_ror_radius_ <= 0.0 || camera_ror_min_neighbors_ < 1)) {
+      throw std::runtime_error("ROR requires camera_ror_radius > 0 and camera_ror_min_neighbors >= 1.");
+    }
+    if (use_latest_tf_on_failure_) {
+      ROS_WARN("use_latest_tf_on_failure=true is enabled. This is for diagnostics only; baseline/quality profiles should keep it false.");
+    }
+  }
+
+  std::string lower(std::string value) const {
+    std::transform(value.begin(), value.end(), value.begin(),
+                   [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+    return value;
+  }
+
+  geometry_msgs::TransformStamped lookupTransformForCloud(const std::string& target_frame,
+                                                          const std::string& source_frame,
+                                                          const ros::Time& stamp,
+                                                          const std::string& source_name) const {
+    const ros::Duration timeout(transform_timeout_);
+    try {
+      return tfBuffer_.lookupTransform(target_frame, source_frame, stamp, timeout);
+    } catch (tf2::TransformException& ex) {
+      if (!use_latest_tf_on_failure_) {
+        throw;
+      }
+      try {
+        geometry_msgs::TransformStamped latest =
+            tfBuffer_.lookupTransform(target_frame, source_frame, ros::Time(0), timeout);
+        latest.header.stamp = stamp;
+        ROS_WARN_THROTTLE(5.0,
+                          "%s transform at sensor time failed (%s); used latest available TF instead.",
+                          source_name.c_str(), ex.what());
+        return latest;
+      } catch (tf2::TransformException&) {
+        throw ex;
+      }
+    }
+  }
+
+  bool applyCameraOutlierFilter(pcl::PointCloud<pcl::PointXYZRGB>& cloud,
+                                std::string& reject_reason) const {
+    if (camera_outlier_filter_ == "none" || cloud.empty()) {
+      return true;
+    }
+
+    const std::size_t before = cloud.size();
+    pcl::PointCloud<pcl::PointXYZRGB> filtered;
+
+    if (camera_outlier_filter_ == "sor") {
+      if (cloud.size() <= static_cast<std::size_t>(camera_sor_mean_k_)) {
+        reject_reason = "sor_insufficient_points";
+        return false;
+      }
+      pcl::StatisticalOutlierRemoval<pcl::PointXYZRGB> sor;
+      sor.setInputCloud(cloud.makeShared());
+      sor.setMeanK(camera_sor_mean_k_);
+      sor.setStddevMulThresh(camera_sor_stddev_mul_);
+      sor.filter(filtered);
+    } else if (camera_outlier_filter_ == "ror") {
+      pcl::RadiusOutlierRemoval<pcl::PointXYZRGB> ror;
+      ror.setInputCloud(cloud.makeShared());
+      ror.setRadiusSearch(camera_ror_radius_);
+      ror.setMinNeighborsInRadius(camera_ror_min_neighbors_);
+      ror.filter(filtered);
+    }
+
+    cloud.swap(filtered);
+    if (cloud.empty()) {
+      reject_reason = camera_outlier_filter_ + "_removed_all_points";
+      return false;
+    }
+    if (camera_min_points_ > 0 && cloud.size() < static_cast<std::size_t>(camera_min_points_)) {
+      reject_reason = camera_outlier_filter_ + "_below_min_points";
+      return false;
+    }
+
+    ROS_INFO_THROTTLE(5.0,
+                      "RealSense %s filter kept %zu/%zu points before accumulation.",
+                      camera_outlier_filter_.c_str(), cloud.size(), before);
+    return true;
+  }
+
+  bool isCameraKeyframeAccepted(const geometry_msgs::TransformStamped& current,
+                                std::string& reject_reason) const {
+    if (!has_last_camera_keyframe_transform_) {
+      return true;
+    }
+    if (camera_keyframe_min_translation_ <= 0.0 && camera_keyframe_min_rotation_deg_ <= 0.0) {
+      return true;
+    }
+
+    const geometry_msgs::Vector3& a = last_camera_keyframe_transform_.transform.translation;
+    const geometry_msgs::Vector3& b = current.transform.translation;
+    const double dx = b.x - a.x;
+    const double dy = b.y - a.y;
+    const double dz = b.z - a.z;
+    const double translation = std::sqrt(dx * dx + dy * dy + dz * dz);
+    const double rotation_deg = quaternionAngularDistanceDeg(last_camera_keyframe_transform_.transform.rotation,
+                                                             current.transform.rotation);
+
+    const bool moved_enough =
+        camera_keyframe_min_translation_ <= 0.0 || translation >= camera_keyframe_min_translation_;
+    const bool rotated_enough =
+        camera_keyframe_min_rotation_deg_ <= 0.0 || rotation_deg >= camera_keyframe_min_rotation_deg_;
+
+    if (!moved_enough && !rotated_enough) {
+      std::ostringstream reason;
+      reason << "keyframe_delta_small translation=" << translation
+             << " rotation_deg=" << rotation_deg;
+      reject_reason = reason.str();
+      return false;
+    }
+    return true;
+  }
+
+  double quaternionAngularDistanceDeg(const geometry_msgs::Quaternion& q1,
+                                      const geometry_msgs::Quaternion& q2) const {
+    double dot = q1.x * q2.x + q1.y * q2.y + q1.z * q2.z + q1.w * q2.w;
+    dot = std::fabs(dot);
+    dot = std::min(1.0, std::max(-1.0, dot));
+    const double pi = 3.14159265358979323846;
+    return 2.0 * std::acos(dot) * 180.0 / pi;
+  }
+
+  template <typename MsgPtrT>
+  void trimSyncQueue(std::deque<MsgPtrT>& queue) const {
+    while (queue.size() > static_cast<std::size_t>(camera_sync_queue_size_)) {
+      queue.pop_front();
+    }
+  }
+
+  template <typename MsgPtrT>
+  MsgPtrT findClosestStampedMessage(const std::deque<MsgPtrT>& queue,
+                                    const ros::Time& stamp,
+                                    double& best_delta) const {
+    MsgPtrT best;
+    best_delta = std::numeric_limits<double>::infinity();
+    for (const auto& msg : queue) {
+      const double delta = std::fabs((msg->header.stamp - stamp).toSec());
+      if (delta < best_delta) {
+        best_delta = delta;
+        best = msg;
+      }
+    }
+    if (best && best_delta <= camera_sync_tolerance_) {
+      return best;
+    }
+    return MsgPtrT();
+  }
+
+  bool findSyncedColorAndInfo(const ros::Time& stamp,
+                              sensor_msgs::ImageConstPtr& image_msg,
+                              sensor_msgs::CameraInfoConstPtr& info_msg,
+                              std::string& reject_reason) {
+    std::lock_guard<std::mutex> lock(color_mutex_);
+
+    double info_delta = 0.0;
+    info_msg = findClosestStampedMessage(camera_info_queue_, stamp, info_delta);
+    if (!info_msg) {
+      std::ostringstream reason;
+      reason << "camera_info_sync_missing tolerance_s=" << camera_sync_tolerance_;
+      reject_reason = reason.str();
+      return false;
+    }
+
+    image_msg.reset();
+    if (enable_camera_color_) {
+      double image_delta = 0.0;
+      image_msg = findClosestStampedMessage(color_image_queue_, stamp, image_delta);
+      if (!image_msg) {
+        std::ostringstream reason;
+        reason << "color_sync_missing tolerance_s=" << camera_sync_tolerance_;
+        reject_reason = reason.str();
+        return false;
+      }
+      ROS_INFO_THROTTLE(10.0,
+                        "Aligned RGB-D sync deltas: color=%.4fs camera_info=%.4fs tolerance=%.4fs",
+                        image_delta, info_delta, camera_sync_tolerance_);
+    }
+
+    return true;
+  }
+
+  void logCameraCounters() {
+    ROS_INFO_THROTTLE(10.0,
+                      "RealSense counters: received=%llu base_valid=%llu visualized=%llu quality_accumulated=%llu skipped_rate=%llu reject_build=%llu reject_tf=%llu reject_empty=%llu reject_min_points=%llu reject_filter=%llu reject_keyframe=%llu reject_sync=%llu",
+                      static_cast<unsigned long long>(camera_frames_received_),
+                      static_cast<unsigned long long>(camera_frames_base_valid_),
+                      static_cast<unsigned long long>(camera_frames_visualized_),
+                      static_cast<unsigned long long>(camera_frames_accumulated_quality_),
+                      static_cast<unsigned long long>(camera_frames_skipped_rate_),
+                      static_cast<unsigned long long>(camera_frames_rejected_build_),
+                      static_cast<unsigned long long>(camera_frames_rejected_tf_),
+                      static_cast<unsigned long long>(camera_frames_rejected_empty_),
+                      static_cast<unsigned long long>(camera_frames_rejected_min_points_),
+                      static_cast<unsigned long long>(camera_frames_rejected_filter_),
+                      static_cast<unsigned long long>(camera_frames_rejected_keyframe_),
+                      static_cast<unsigned long long>(camera_frames_rejected_sync_));
+  }
+
   bool transformCloud(const sensor_msgs::PointCloud2& input,
                       sensor_msgs::PointCloud2& output,
                       const std::string& target_frame,
@@ -432,6 +820,167 @@ private:
       return path.substr(0, dot_pos) + suffix + path.substr(dot_pos);
     }
     return path + suffix + ".pcd";
+  }
+
+  std::string replaceSuffixAndExtension(const std::string& path,
+                                        const std::string& suffix,
+                                        const std::string& extension) const {
+    const std::string::size_type slash_pos = path.find_last_of('/');
+    const std::string::size_type dot_pos = path.find_last_of('.');
+    if (dot_pos != std::string::npos && (slash_pos == std::string::npos || dot_pos > slash_pos)) {
+      return path.substr(0, dot_pos) + suffix + extension;
+    }
+    return path + suffix + extension;
+  }
+
+  std::string makeSnapshotId() {
+    const ros::Time now = ros::Time::now();
+    std::ostringstream stream;
+    stream << now.sec << "_" << std::setw(9) << std::setfill('0') << now.nsec
+           << "_" << save_sequence_++;
+    return stream.str();
+  }
+
+  SavedArtifact describeSavedArtifact(const std::string& role, const std::string& path) const {
+    SavedArtifact artifact;
+    artifact.role = role;
+    artifact.path = path;
+    artifact.hash_algorithm = "fnv1a64";
+    artifact.hash = fileHashFnv1a64(path);
+    artifact.size_bytes = fileSizeBytes(path);
+    return artifact;
+  }
+
+  long long fileSizeBytes(const std::string& path) const {
+    struct stat info;
+    if (stat(path.c_str(), &info) != 0) {
+      return -1;
+    }
+    return static_cast<long long>(info.st_size);
+  }
+
+  std::string fileHashFnv1a64(const std::string& path) const {
+    std::ifstream stream(path.c_str(), std::ios::binary);
+    if (!stream.good()) {
+      return "";
+    }
+
+    uint64_t hash = 1469598103934665603ULL;
+    char buffer[4096];
+    while (stream.good()) {
+      stream.read(buffer, sizeof(buffer));
+      const std::streamsize count = stream.gcount();
+      for (std::streamsize i = 0; i < count; ++i) {
+        hash ^= static_cast<unsigned char>(buffer[i]);
+        hash *= 1099511628211ULL;
+      }
+    }
+
+    std::ostringstream out;
+    out << std::hex << std::setw(16) << std::setfill('0') << hash;
+    return out.str();
+  }
+
+  std::string jsonEscape(const std::string& value) const {
+    std::ostringstream out;
+    for (const char c : value) {
+      switch (c) {
+        case '\\': out << "\\\\"; break;
+        case '"': out << "\\\""; break;
+        case '\n': out << "\\n"; break;
+        case '\r': out << "\\r"; break;
+        case '\t': out << "\\t"; break;
+        default:
+          if (static_cast<unsigned char>(c) < 0x20) {
+            out << "\\u" << std::hex << std::setw(4) << std::setfill('0')
+                << static_cast<int>(static_cast<unsigned char>(c));
+          } else {
+            out << c;
+          }
+      }
+    }
+    return out.str();
+  }
+
+  bool writeManifestAtomically(const std::string& path,
+                               const std::string& snapshot_id,
+                               const std::vector<SavedArtifact>& artifacts) const {
+    const std::string tmp_path = path + ".tmp";
+    std::ofstream out(tmp_path.c_str(), std::ios::out | std::ios::trunc);
+    if (!out.good()) {
+      ROS_ERROR("Failed to open manifest temporary file %s.", tmp_path.c_str());
+      return false;
+    }
+
+    out << "{\n";
+    out << "  \"schema\": \"scout_mapping_snapshot_v1\",\n";
+    out << "  \"snapshot_id\": \"" << jsonEscape(snapshot_id) << "\",\n";
+    out << "  \"mapping_profile\": \"" << jsonEscape(mapping_profile_) << "\",\n";
+    out << "  \"run_git_commit\": \"" << jsonEscape(run_git_commit_) << "\",\n";
+    out << "  \"capture_manifest\": \"" << jsonEscape(capture_manifest_) << "\",\n";
+    out << "  \"target_frame\": \"" << jsonEscape(target_frame_) << "\",\n";
+    out << "  \"products\": {\n";
+    out << "    \"camera_diagnostic\": \"base-valid camera frames after range/TF; quality rejects are preserved here\",\n";
+    out << "    \"fused_quality\": \"LiDAR plus camera frames accepted by quality gates\"\n";
+    out << "  },\n";
+    out << "  \"parameters\": {\n";
+    out << "    \"voxel_size\": " << voxel_size_ << ",\n";
+    out << "    \"lidar_voxel_size\": " << lidar_voxel_size_ << ",\n";
+    out << "    \"camera_voxel_size\": " << camera_voxel_size_ << ",\n";
+    out << "    \"camera_min_range\": " << camera_min_range_ << ",\n";
+    out << "    \"camera_max_range\": " << camera_max_range_ << ",\n";
+    out << "    \"camera_outlier_filter\": \"" << jsonEscape(camera_outlier_filter_) << "\",\n";
+    out << "    \"camera_sor_mean_k\": " << camera_sor_mean_k_ << ",\n";
+    out << "    \"camera_sor_stddev_mul\": " << camera_sor_stddev_mul_ << ",\n";
+    out << "    \"camera_ror_radius\": " << camera_ror_radius_ << ",\n";
+    out << "    \"camera_ror_min_neighbors\": " << camera_ror_min_neighbors_ << ",\n";
+    out << "    \"camera_min_points\": " << camera_min_points_ << ",\n";
+    out << "    \"camera_keyframe_min_translation\": " << camera_keyframe_min_translation_ << ",\n";
+    out << "    \"camera_keyframe_min_rotation_deg\": " << camera_keyframe_min_rotation_deg_ << ",\n";
+    out << "    \"camera_sync_tolerance\": " << camera_sync_tolerance_ << ",\n";
+    out << "    \"use_latest_tf_on_failure\": " << (use_latest_tf_on_failure_ ? "true" : "false") << "\n";
+    out << "  },\n";
+    out << "  \"counters\": {\n";
+    out << "    \"camera_received\": " << camera_frames_received_ << ",\n";
+    out << "    \"camera_base_valid\": " << camera_frames_base_valid_ << ",\n";
+    out << "    \"camera_quality_accumulated\": " << camera_frames_accumulated_quality_ << ",\n";
+    out << "    \"camera_rejected_tf\": " << camera_frames_rejected_tf_ << ",\n";
+    out << "    \"camera_rejected_sync\": " << camera_frames_rejected_sync_ << ",\n";
+    out << "    \"camera_rejected_min_points\": " << camera_frames_rejected_min_points_ << ",\n";
+    out << "    \"camera_rejected_filter\": " << camera_frames_rejected_filter_ << ",\n";
+    out << "    \"camera_rejected_keyframe\": " << camera_frames_rejected_keyframe_ << "\n";
+    out << "  },\n";
+    out << "  \"artifacts\": [\n";
+    for (std::size_t i = 0; i < artifacts.size(); ++i) {
+      const SavedArtifact& artifact = artifacts[i];
+      out << "    {\"role\": \"" << jsonEscape(artifact.role)
+          << "\", \"path\": \"" << jsonEscape(artifact.path)
+          << "\", \"hash_algorithm\": \"" << jsonEscape(artifact.hash_algorithm)
+          << "\", \"hash\": \"" << jsonEscape(artifact.hash)
+          << "\", \"size_bytes\": " << artifact.size_bytes << "}";
+      if (i + 1 < artifacts.size()) {
+        out << ",";
+      }
+      out << "\n";
+    }
+    out << "  ]\n";
+    out << "}\n";
+    out.close();
+
+    if (!out.good()) {
+      ROS_ERROR("Failed while writing manifest temporary file %s.", tmp_path.c_str());
+      std::remove(tmp_path.c_str());
+      return false;
+    }
+
+    if (std::rename(tmp_path.c_str(), path.c_str()) != 0) {
+      ROS_ERROR("Failed to atomically publish manifest %s: %s",
+                path.c_str(), std::strerror(errno));
+      std::remove(tmp_path.c_str());
+      return false;
+    }
+
+    return true;
   }
 
   void appendXYZIAsGray(const pcl::PointCloud<pcl::PointXYZI>& input,
@@ -536,14 +1085,10 @@ private:
                                       pcl::PointCloud<pcl::PointXYZRGB>& output) {
     sensor_msgs::ImageConstPtr image_msg;
     sensor_msgs::CameraInfoConstPtr info_msg;
-    {
-      std::lock_guard<std::mutex> lock(color_mutex_);
-      image_msg = latest_color_image_;
-      info_msg = latest_camera_info_;
-    }
-
-    if (!info_msg) {
-      ROS_WARN_THROTTLE(5.0, "Aligned depth is ready but camera_info is not ready.");
+    std::string sync_reject_reason;
+    if (!findSyncedColorAndInfo(depth_msg.header.stamp, image_msg, info_msg, sync_reject_reason)) {
+      ++camera_frames_rejected_sync_;
+      ROS_WARN_THROTTLE(5.0, "Aligned depth RGB-D sync rejected frame: %s", sync_reject_reason.c_str());
       return false;
     }
 
@@ -552,7 +1097,9 @@ private:
                            image_msg->width == depth_msg.width &&
                            image_msg->height == depth_msg.height;
     if (enable_camera_color_ && !use_color) {
-      ROS_WARN_THROTTLE(5.0, "Aligned depth has camera_info but RGB image is not ready/aligned; using white camera cloud fallback.");
+      ++camera_frames_rejected_sync_;
+      ROS_WARN_THROTTLE(5.0, "Aligned depth RGB image exists but dimensions do not match depth; rejecting frame instead of using latest/white fallback.");
+      return false;
     }
 
     if (depth_msg.width == 0 || depth_msg.height == 0) {
@@ -672,13 +1219,15 @@ private:
 
     sensor_msgs::ImageConstPtr image_msg;
     sensor_msgs::CameraInfoConstPtr info_msg;
-    {
-      std::lock_guard<std::mutex> lock(color_mutex_);
-      image_msg = latest_color_image_;
-      info_msg = latest_camera_info_;
-    }
 
-    if (!enable_camera_color_ || !image_msg || !info_msg) {
+    std::string sync_reject_reason;
+    if (!enable_camera_color_ ||
+        !findSyncedColorAndInfo(cloud_in.header.stamp, image_msg, info_msg, sync_reject_reason)) {
+      if (enable_camera_color_) {
+        ROS_WARN_THROTTLE(5.0,
+                          "RealSense cloud has no rgb field and synchronized color is unavailable (%s); using white fallback.",
+                          sync_reject_reason.c_str());
+      }
       ROS_WARN_THROTTLE(5.0, "RealSense cloud has no rgb field and color image/camera_info are not ready; using white fallback.");
       convertToXYZRGB(cloud_in, camera_min_range_, camera_max_range_, output);
       return !output.empty();
@@ -969,6 +1518,7 @@ private:
   ros::Publisher pub_;
   ros::Publisher lidar_pub_;
   ros::Publisher camera_pub_;
+  ros::Publisher camera_diagnostic_pub_;
   ros::Publisher camera_instant_pub_;
   ros::ServiceServer save_srv_;
   tf2_ros::Buffer tfBuffer_;
@@ -977,16 +1527,19 @@ private:
   pcl::PointCloud<pcl::PointXYZI> accumulated_lidar_;
   pcl::PointCloud<pcl::PointXYZI> accumulated_camera_;
   pcl::PointCloud<pcl::PointXYZRGB> accumulated_camera_rgb_;
+  pcl::PointCloud<pcl::PointXYZRGB> accumulated_camera_diagnostic_rgb_;
   std::mutex mutex_;
   std::mutex color_mutex_;
-  sensor_msgs::ImageConstPtr latest_color_image_;
-  sensor_msgs::CameraInfoConstPtr latest_camera_info_;
+  std::deque<sensor_msgs::ImageConstPtr> color_image_queue_;
+  std::deque<sensor_msgs::CameraInfoConstPtr> camera_info_queue_;
   bool enable_lidar_;
   bool enable_camera_;
   bool enable_camera_color_;
   bool use_aligned_depth_for_camera_;
   bool save_lidar_;
   bool save_camera_;
+  bool save_camera_diagnostic_;
+  bool save_fused_quality_alias_;
   std::string lidar_topic_;
   std::string camera_topic_;
   std::string camera_depth_topic_;
@@ -994,6 +1547,10 @@ private:
   std::string camera_info_topic_;
   std::string target_frame_;
   std::string camera_visualization_frame_;
+  std::string mapping_profile_;
+  std::string run_git_commit_;
+  std::string capture_manifest_;
+  std::string camera_outlier_filter_;
   double voxel_size_;
   double lidar_voxel_size_;
   double camera_voxel_size_;
@@ -1004,16 +1561,45 @@ private:
   double camera_max_range_;
   double camera_intensity_;
   double transform_timeout_;
+  double camera_sor_stddev_mul_;
+  double camera_ror_radius_;
+  double camera_keyframe_min_translation_;
+  double camera_keyframe_min_rotation_deg_;
+  double camera_sync_tolerance_;
   bool use_latest_tf_on_failure_;
   int camera_depth_pixel_step_;
+  int camera_sor_mean_k_;
+  int camera_ror_min_neighbors_;
+  int camera_min_points_;
+  int camera_sync_queue_size_;
   std::string output_pcd_;
   ros::Time last_camera_accumulation_time_;
   ros::Time last_camera_visualization_time_;
+  geometry_msgs::TransformStamped last_camera_keyframe_transform_;
+  bool has_last_camera_keyframe_transform_ = false;
+  unsigned int save_sequence_ = 0;
+  uint64_t camera_frames_received_ = 0;
+  uint64_t camera_frames_base_valid_ = 0;
+  uint64_t camera_frames_visualized_ = 0;
+  uint64_t camera_frames_accumulated_quality_ = 0;
+  uint64_t camera_frames_skipped_rate_ = 0;
+  uint64_t camera_frames_rejected_build_ = 0;
+  uint64_t camera_frames_rejected_tf_ = 0;
+  uint64_t camera_frames_rejected_empty_ = 0;
+  uint64_t camera_frames_rejected_min_points_ = 0;
+  uint64_t camera_frames_rejected_filter_ = 0;
+  uint64_t camera_frames_rejected_keyframe_ = 0;
+  uint64_t camera_frames_rejected_sync_ = 0;
 };
 
 int main(int argc, char** argv) {
   ros::init(argc, argv, "scout_pointcloud_accumulator");
-  AccumulatorNode node;
-  ros::spin();
-  return 0;
+  try {
+    AccumulatorNode node;
+    ros::spin();
+    return 0;
+  } catch (const std::exception& ex) {
+    ROS_FATAL("Failed to start scout_pointcloud_accumulator: %s", ex.what());
+    return 1;
+  }
 }

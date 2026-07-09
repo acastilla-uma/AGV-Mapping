@@ -11,6 +11,112 @@ mapping_validate_rviz_environment() {
   fi
 }
 
+mapping_validate_bool() {
+  local name="$1"
+  local value="$2"
+  case "$value" in
+    true|false) return 0 ;;
+    *)
+      echo "ERROR: $name must be 'true' or 'false' (got '$value')." >&2
+      return 1
+      ;;
+  esac
+}
+
+mapping_validate_choice() {
+  local name="$1"
+  local value="$2"
+  shift 2
+  local choice
+  for choice in "$@"; do
+    if [ "$value" = "$choice" ]; then
+      return 0
+    fi
+  done
+  echo "ERROR: $name must be one of: $* (got '$value')." >&2
+  return 1
+}
+
+mapping_validate_number() {
+  local name="$1"
+  local value="$2"
+  python3 - "$name" "$value" <<'PY'
+import math
+import sys
+name, value = sys.argv[1], sys.argv[2]
+try:
+    parsed = float(value)
+except ValueError:
+    print("ERROR: %s must be numeric (got '%s')." % (name, value), file=sys.stderr)
+    sys.exit(1)
+if not math.isfinite(parsed):
+    print("ERROR: %s must be finite (got '%s')." % (name, value), file=sys.stderr)
+    sys.exit(1)
+PY
+}
+
+mapping_validate_number_min() {
+  local name="$1"
+  local value="$2"
+  local min_value="$3"
+  local inclusive="$4"
+  python3 - "$name" "$value" "$min_value" "$inclusive" <<'PY'
+import math
+import sys
+name, value, min_value, inclusive = sys.argv[1], sys.argv[2], float(sys.argv[3]), sys.argv[4] == "true"
+try:
+    parsed = float(value)
+except ValueError:
+    print("ERROR: %s must be numeric (got '%s')." % (name, value), file=sys.stderr)
+    sys.exit(1)
+if not math.isfinite(parsed):
+    print("ERROR: %s must be finite (got '%s')." % (name, value), file=sys.stderr)
+    sys.exit(1)
+ok = parsed >= min_value if inclusive else parsed > min_value
+if not ok:
+    op = ">=" if inclusive else ">"
+    print("ERROR: %s must be %s %s (got '%s')." % (name, op, min_value, value), file=sys.stderr)
+    sys.exit(1)
+PY
+}
+
+mapping_validate_int_min() {
+  local name="$1"
+  local value="$2"
+  local min_value="$3"
+  python3 - "$name" "$value" "$min_value" <<'PY'
+import sys
+name, value, min_value = sys.argv[1], sys.argv[2], int(sys.argv[3])
+try:
+    parsed = int(value)
+except ValueError:
+    print("ERROR: %s must be an integer (got '%s')." % (name, value), file=sys.stderr)
+    sys.exit(1)
+if str(parsed) != value and not (value.startswith("+") and str(parsed) == value[1:]):
+    print("ERROR: %s must be an integer (got '%s')." % (name, value), file=sys.stderr)
+    sys.exit(1)
+if parsed < min_value:
+    print("ERROR: %s must be >= %d (got '%s')." % (name, min_value, value), file=sys.stderr)
+    sys.exit(1)
+PY
+}
+
+mapping_validate_less_than() {
+  local lesser_name="$1"
+  local lesser_value="$2"
+  local greater_name="$3"
+  local greater_value="$4"
+  python3 - "$lesser_name" "$lesser_value" "$greater_name" "$greater_value" <<'PY'
+import sys
+lesser_name, lesser_value, greater_name, greater_value = sys.argv[1:5]
+lesser = float(lesser_value)
+greater = float(greater_value)
+if lesser >= greater:
+    print("ERROR: %s (%s) must be smaller than %s (%s)." % (lesser_name, lesser_value, greater_name, greater_value), file=sys.stderr)
+    sys.exit(1)
+PY
+}
+
 mapping_camera_preflight() {
   local nodes
   if ! nodes="$($ROSNODE_CMD list 2>/dev/null)"; then
