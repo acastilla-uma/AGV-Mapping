@@ -8,6 +8,7 @@ catkin_ws/logs/
 catkin_ws/src.zip
 catkin_ws/src/realsense.tar.gz
 /maps/
+/datos/
 /rs-save-to-disk-output-*
 __pycache__/
 *.pyc

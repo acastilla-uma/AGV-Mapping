@@ -29,9 +29,7 @@
   <arg name="output_pcd" default="/tmp/accumulated_cloud.pcd" />
   <arg name="save_lidar" default="true" />
   <arg name="save_camera" default="true" />
-  <arg name="save_camera_diagnostic" default="true" />
-  <arg name="save_fused_quality_alias" default="true" />
-  <arg name="mapping_profile" default="baseline" />
+  <arg name="mapping_profile" default="quality" />
   <arg name="run_git_commit" default="unknown" />
   <arg name="capture_manifest" default="" />
   <arg name="camera_outlier_filter" default="none" />
@@ -89,8 +87,6 @@
     <param name="output_pcd" value="$(arg output_pcd)" />
     <param name="save_lidar" value="$(arg save_lidar)" />
     <param name="save_camera" value="$(arg save_camera)" />
-    <param name="save_camera_diagnostic" value="$(arg save_camera_diagnostic)" />
-    <param name="save_fused_quality_alias" value="$(arg save_fused_quality_alias)" />
     <param name="mapping_profile" value="$(arg mapping_profile)" />
     <param name="run_git_commit" value="$(arg run_git_commit)" />
     <param name="capture_manifest" value="$(arg capture_manifest)" />

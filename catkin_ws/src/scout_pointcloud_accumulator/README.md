@@ -65,21 +65,19 @@ map
 
 ## Archivos guardados
 
-Al llamar al servicio de guardado se generan:
+Al llamar al servicio de guardado se generan sólo los tres PCD finales y el manifest:
 
 ```text
 *_lidar.pcd   LiDAR solo, PointXYZI
 *_camera.pcd  RealSense aceptada por quality gates, PointXYZRGB
-*_camera_diagnostic.pcd  RealSense base-valida aunque haya sido rechazada de quality
-*_fused.pcd   LiDAR + RealSense aceptada por quality gates, PointXYZRGB
-*_fused_quality.pcd  alias explicito de fused quality
+*_fused_quality.pcd  LiDAR + RealSense aceptada por quality gates, PointXYZRGB
 *_manifest.json  snapshot_id, parametros, contadores y hashes de artefactos
 ```
 
 Directorio por defecto:
 
 ```text
-/media/agilex/0123-4567/ros/maps
+/media/agilex/0123-4567/ros/maps/map_YYYYMMDD_HHMMSS/
 ```
 
 ## Flags de guardado
@@ -141,7 +139,7 @@ tail -f /media/agilex/0123-4567/ros/agv_mapping/logs/accumulator.log
 ## Parametros utiles
 
 ```bash
-MAPPING_PROFILE=baseline
+MAPPING_PROFILE=quality
 CAMERA_VOXEL_SIZE=0.05
 CAMERA_VISUALIZATION_VOXEL_SIZE=0.02
 CAMERA_ACCUMULATE_RATE=1.0
@@ -155,18 +153,10 @@ LEGO_LOCK_ROLL_PITCH=true
 `CAMERA_XYZ` y `CAMERA_RPY` definen la TF `base_link -> camera_link`.
 Los valores actuales son iniciales; para mapas metricos precisos hay que calibrar fisicamente la orientacion.
 
-## Perfil baseline vs quality
+## Perfil quality
 
-`start_lidar_mapping.sh` es el entrypoint canonico. El perfil por defecto
-`baseline` conserva el comportamiento operativo actual: RealSense 640x480@6 FPS,
-sin filtros librealsense y sin filtros de outliers/keyframes en el acumulador.
-
-El perfil `quality` es opt-in y activa una configuracion conservadora para
-experimentar sin recompilar:
-
-```bash
-MAPPING_PROFILE=quality ./scripts/start_lidar_mapping.sh
-```
+`start_lidar_mapping.sh` es el entrypoint canonico. El perfil `quality` es el
+unico perfil soportado; el flujo anterior sin quality queda deprecated.
 
 Valores por defecto de `quality`:
 
@@ -182,11 +172,11 @@ CAMERA_KEYFRAME_MIN_TRANSLATION=0.05
 CAMERA_KEYFRAME_MIN_ROTATION_DEG=3.0
 ```
 
-Estos valores son deliberadamente reversibles. Cualquier parametro puede
+Estos valores pueden sobrescribirse por entorno cuando haga falta, por ejemplo:
 sobrescribirse por entorno, por ejemplo:
 
 ```bash
-MAPPING_PROFILE=quality CAMERA_OUTLIER_FILTER=none CAMERA_MAX_RANGE=2.5 ./scripts/start_lidar_mapping.sh
+CAMERA_OUTLIER_FILTER=none CAMERA_MAX_RANGE=2.5 ./scripts/start_lidar_mapping.sh
 ```
 
 Filtros disponibles en el acumulador:
@@ -204,17 +194,12 @@ CAMERA_SYNC_TOLERANCE=0.03
 `use_latest_tf_on_failure` sigue desactivado por defecto. Si un frame de camara
 no tiene TF en su timestamp, no entra al mapa de calidad.
 
-## Productos de diagnostico y calidad
+## Productos quality
 
-La camara tiene dos salidas con contratos distintos:
-
-- `/accumulated_camera_diagnostic_points`: frames base-validos tras rango y TF.
-  Un frame rechazado por filtros/keyframe sigue visible aqui.
-- `/accumulated_camera_points`: solo frames aceptados por los quality gates.
-
-El fused usa la segunda salida. Esto evita que una nube aparentemente mas densa
-contamine el mapa final con duplicados o fantasmas, pero conserva evidencia para
-diagnosticar por que se rechazo un frame.
+La camara publica y guarda sólo frames aceptados por los quality gates en
+`/accumulated_camera_points`. El mapa fusionado usa esa misma salida, de modo
+que los PCD finales son `*_lidar.pcd`, `*_camera.pcd` y
+`*_fused_quality.pcd`.
 
 Cada guardado publica el manifiesto `*_manifest.json` al final. Si falta ese
 manifiesto, trata el conjunto de PCDs como snapshot parcial.
@@ -228,8 +213,8 @@ SCENARIO=S4_recta_pared SPLIT=training DURATION_SEC=60 ./scripts/capture_mapping
 ```
 
 El manifiesto guarda commit, topicos, calibracion, hash del bag y configuracion
-resuelta. Usa al menos tres capturas baseline por escenario para estimar la
-variabilidad antes de promover `quality`.
+resuelta. Usa al menos tres capturas por escenario para estimar la
+variabilidad antes de cambiar parametros del perfil quality.
 
 Evaluar un PCD contra un plano congelado:
 

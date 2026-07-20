@@ -161,8 +161,12 @@ grep -q 'USE_ALIGNED_DEPTH_FOR_CAMERA="${USE_ALIGNED_DEPTH_FOR_CAMERA:-false}"' 
   "$ROOT_DIR/catkin_ws/scripts/start_lidar_mapping.sh" || fail "unstable aligned-depth path restored"
 grep -q 'REALSENSE_ENABLE_POINTCLOUD="${REALSENSE_ENABLE_POINTCLOUD:-true}"' \
   "$ROOT_DIR/catkin_ws/scripts/start_lidar_mapping.sh" || fail "native pointcloud path disabled"
-grep -q 'MAPPING_PROFILE="${MAPPING_PROFILE:-baseline}"' \
-  "$ROOT_DIR/catkin_ws/scripts/start_lidar_mapping.sh" || fail "baseline mapping profile default missing"
+grep -q 'MAPPING_PROFILE="${MAPPING_PROFILE:-quality}"' \
+  "$ROOT_DIR/catkin_ws/scripts/start_lidar_mapping.sh" || fail "quality mapping profile default missing"
+grep -q 'SESSION_DIR="${SESSION_DIR:-$OUTPUT_DIR/$SESSION_NAME}"' \
+  "$ROOT_DIR/catkin_ws/scripts/start_lidar_mapping.sh" || fail "session map directory default missing"
+grep -q 'GPS_METADATA_DIR="${GPS_METADATA_DIR:-$SESSION_DIR}"' \
+  "$ROOT_DIR/catkin_ws/scripts/start_lidar_mapping.sh" || fail "GPS metadata is not stored in the session map directory"
 grep -q 'DEFAULT_REALSENSE_FILTERS="decimation,spatial"' \
   "$ROOT_DIR/catkin_ws/scripts/start_lidar_mapping.sh" || fail "quality RealSense filter profile missing"
 grep -q 'CAMERA_OUTLIER_FILTER="${CAMERA_OUTLIER_FILTER:-$DEFAULT_CAMERA_OUTLIER_FILTER}"' \
@@ -171,8 +175,12 @@ grep -q 'mapping_validate_choice CAMERA_OUTLIER_FILTER "$CAMERA_OUTLIER_FILTER" 
   "$ROOT_DIR/catkin_ws/scripts/start_lidar_mapping.sh" || fail "outlier filter validation missing"
 grep -q 'camera_outlier_filter:="$CAMERA_OUTLIER_FILTER"' \
   "$ROOT_DIR/catkin_ws/scripts/start_lidar_mapping.sh" || fail "outlier filter is not passed to accumulator"
-grep -q 'save_camera_diagnostic:="$SAVE_CAMERA_DIAGNOSTIC"' \
-  "$ROOT_DIR/catkin_ws/scripts/start_lidar_mapping.sh" || fail "camera diagnostic save flag is not passed"
+if grep -Eq 'save_camera_diagnostic|save_fused_quality_alias|_camera_diagnostic\.pcd|_fused\.pcd' \
+    "$ROOT_DIR/catkin_ws/scripts/start_lidar_mapping.sh" \
+    "$ROOT_DIR/catkin_ws/src/scout_pointcloud_accumulator/launch/accumulate.launch" \
+    "$ROOT_DIR/catkin_ws/src/scout_pointcloud_accumulator/src/accumulator.cpp"; then
+  fail "deprecated non-quality PCD flow is still referenced"
+fi
 grep -q 'run_git_commit:="$RUN_GIT_COMMIT"' \
   "$ROOT_DIR/catkin_ws/scripts/start_lidar_mapping.sh" || fail "git commit is not passed to accumulator"
 grep -q 'CAMERA_VISUALIZATION_FRAME="${CAMERA_VISUALIZATION_FRAME:-camera_depth_optical_frame}"' \

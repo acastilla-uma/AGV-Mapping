@@ -490,7 +490,8 @@ class GpsMetadataLogger(object):
             path = self.metadata_dir
         else:
             workspace_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..", ".."))
-            path = os.path.join(workspace_root, "datos", "gps_metadata_" + timestamp_slug())
+            session_name = "gps_metadata_" + timestamp_slug()
+            path = os.path.join(workspace_root, "maps", session_name)
         if not os.path.isdir(path):
             os.makedirs(path)
         return path

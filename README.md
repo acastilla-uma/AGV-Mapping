@@ -207,7 +207,7 @@ Por defecto el arranque integrado usa `ENABLE_GPS=true`, `GPS_TCP_BIND=0.0.0.0` 
 ENABLE_GPS=false ./scripts/start_lidar_mapping.sh
 ```
 
-Variables útiles del arranque integrado: `ENABLE_GPS`, `GPS_METADATA_DIR`, `GPS_TCP_BIND`, `GPS_TCP_PORT`, `GPS_ALLOWED_HOSTS`, `GPS_MIN_SATS`, `GPS_MAX_HDOP`, `GPS_MAX_AGE_MS`, `GPS_REQUIRE_FIX`, `GPS_REQUIRE_SATS`, `GPS_REQUIRE_HDOP`, `GPS_REQUIRE_AGE`, `GPS_ASSOCIATION_MAX_AGE_SEC`, `GPS_TF_WAIT_TIMEOUT_SEC`, `GPS_MAX_LINE_BYTES`, `GPS_FRAME`, `GPS_ROBOT_FRAME`, `GPS_DATUM_LATITUDE`, `GPS_DATUM_LONGITUDE` y `GPS_DATUM_ALTITUDE`.
+Cada ejecución crea una carpeta de sesión `maps/map_YYYYMMDD_HHMMSS/`. Dentro quedan juntos los tres mapas PCD, el manifest del acumulador y los CSV/JSONL GPS. Variables útiles del arranque integrado: `SESSION_NAME`, `SESSION_DIR`, `ENABLE_GPS`, `GPS_METADATA_DIR`, `GPS_TCP_BIND`, `GPS_TCP_PORT`, `GPS_ALLOWED_HOSTS`, `GPS_MIN_SATS`, `GPS_MAX_HDOP`, `GPS_MAX_AGE_MS`, `GPS_REQUIRE_FIX`, `GPS_REQUIRE_SATS`, `GPS_REQUIRE_HDOP`, `GPS_REQUIRE_AGE`, `GPS_ASSOCIATION_MAX_AGE_SEC`, `GPS_TF_WAIT_TIMEOUT_SEC`, `GPS_MAX_LINE_BYTES`, `GPS_FRAME`, `GPS_ROBOT_FRAME`, `GPS_DATUM_LATITUDE`, `GPS_DATUM_LONGITUDE` y `GPS_DATUM_ALTITUDE`.
 
 En el PC operador, primero identifique el LilyGO y capture evidencia:
 
@@ -232,29 +232,44 @@ python3 catkin_ws/scripts/lilygo_ble_tcp_bridge.py \
 
 El logger acepta líneas JSON, pares `clave=valor` y frases NMEA tipo GGA/RMC. Campos normalizados: `latitude`, `longitude`, `altitude`, `sats`, `hdop`, `fix_ok`, `measurement_age_ms`, `raw_text` y `raw_hex`. Las muestras se aceptan sólo si tienen latitud/longitud, fix válido cuando `gps_require_fix=true`, al menos `gps_min_sats`, `hdop <= gps_max_hdop` y edad menor o igual a `gps_max_age_ms`. El `time_utc` del bridge BLE es sólo tiempo de transporte y no sustituye `age_ms`/`measurement_age_ms`; si no llega una edad explícita, la muestra se rechaza con `missing_age`. La asociación con la trayectoria usa `estimated_measurement_ros_time`, no el instante de recepción; si la edad supera `gps_association_max_age_sec` o no hay TF para ese timestamp, `trajectory_gps_map.csv` deja `tf_ok=0` y rellena `association_rejection_reason`.
 
-El directorio `metadata_dir` contiene:
+La carpeta de sesión en `maps/map_YYYYMMDD_HHMMSS/` contiene:
 
 | Archivo | Contenido |
 | --- | --- |
 | `gps.csv` | Todas las muestras normalizadas con motivo de rechazo si aplica. |
 | `gps_raw.jsonl` | Payload original más envelope de recepción. |
 | `trajectory_gps_map.csv` | Muestras aceptadas y su intento de asociación a TF `map → base_link` en el timestamp estimado de medida. |
-| `manifest.json` | Umbrales, frames, contadores, datum policy y rutas generadas. |
+| `manifest.json` | Umbrales, frames, contadores, datum policy y rutas GPS generadas. |
+| `map_YYYYMMDD_HHMMSS_lidar.pcd` | Mapa LiDAR. |
+| `map_YYYYMMDD_HHMMSS_camera.pcd` | Mapa cámara RGB-D aceptado por quality gates. |
+| `map_YYYYMMDD_HHMMSS_fused_quality.pcd` | Mapa fusionado quality. |
+| `map_YYYYMMDD_HHMMSS_manifest.json` | Manifest del snapshot PCD. |
 
 Para generar productos georreferenciados offline:
 
 ```bash
 python3 catkin_ws/src/scout_pointcloud_accumulator/scripts/georeference_lidar_map.py \
-  --trajectory datos/gps_metadata_sesion/trajectory_gps_map.csv \
-  --pcd maps/map_YYYYMMDD_HHMMSS_lidar.pcd \
+  --trajectory maps/map_YYYYMMDD_HHMMSS/trajectory_gps_map.csv \
+  --pcd maps/map_YYYYMMDD_HHMMSS/map_YYYYMMDD_HHMMSS_lidar.pcd \
   --datum-latitude 38.000000 \
   --datum-longitude -4.000000 \
   --datum-altitude 100.0 \
-  --output-dir maps/georef_sesion \
+  --output-dir maps/map_YYYYMMDD_HHMMSS/georef \
   --output-prefix map_YYYYMMDD_HHMMSS
 ```
 
 El exportador usa WGS84 a ENU con datum manual o con `datum_policy` manual leído desde `--metadata-manifest`. El origen `first_valid_fix` sólo está permitido si se pasa `--allow-first-fix-datum`, para exportación exploratoria no reproducible. El ajuste es una similitud 2D más offset vertical entre `map` y ENU, y escribe manifest con `pair_count`, escala, yaw y residuales. Sólo exporta PCD ASCII; si recibe un PCD binario lo informa como no exportado en `warnings` en vez de fingir soporte.
+
+Para visualizar la ruta GPS/TF superpuesta a la nube LiDAR en el frame `map`, genere un HTML offline:
+
+```bash
+python3 catkin_ws/src/scout_pointcloud_accumulator/scripts/visualize_gps_lidar_route.py \
+  --trajectory maps/map_YYYYMMDD_HHMMSS/trajectory_gps_map.csv \
+  --pcd maps/map_YYYYMMDD_HHMMSS/map_YYYYMMDD_HHMMSS_lidar_ascii.pcd \
+  --output maps/map_YYYYMMDD_HHMMSS/route_lidar_view.html
+```
+
+El visor muestra la nube en vista superior, la ruta del AGV y una tabla con `latitude`, `longitude`, `map_x`, `map_y`, `hdop` y satélites para cada fix asociado. Haga click sobre un punto de ruta para ver su coordenada GPS.
 
 ### Visualizar
 
@@ -295,7 +310,7 @@ cd catkin_ws
 | `CAMERA_VOXEL_SIZE` | `0.05` m | Resolución del mapa RGB. |
 | `CAMERA_VISUALIZATION_VOXEL_SIZE` | `0.02` m | Resolución RGB para RViz. |
 | `CAMERA_ACCUMULATE_RATE` | `1.0` Hz | Frecuencia de incorporación al mapa. |
-| `CAMERA_MIN_RANGE`, `CAMERA_MAX_RANGE` | `0.20`, `5.0` m | Profundidad aceptada. |
+| `CAMERA_MIN_RANGE`, `CAMERA_MAX_RANGE` | `0.20`, `3.0` m | Profundidad aceptada. |
 | `CAMERA_DEPTH_PIXEL_STEP` | `2` | Submuestreo de profundidad. |
 | `CAMERA_CALIBRATION_FILE` | YAML del paquete | Extrínseca de cámara. |
 | `TRANSFORM_TIMEOUT` | `0.5` s | Espera máxima de TF. |
@@ -309,7 +324,8 @@ cd catkin_ws
 | `LEGO_LOCK_ROLL_PITCH` | `true` | Limita deriva de roll/pitch. |
 | `ENABLE_GPS` | `true` | Lanza el sidecar GPS junto con `start_lidar_mapping.sh`; use `false` para sesiones sin GPS. |
 | `GPS_ALLOWED_HOSTS` | vacío | IPs del PC operador autorizadas para enviar GPS a la Jetson; obligatorio si `GPS_TCP_BIND` no es loopback. |
-| `GPS_METADATA_DIR` | `datos/gps_metadata_YYYYMMDD_HHMMSS` | Carpeta de metadatos GPS de la sesión. |
+| `SESSION_DIR` | `maps/map_YYYYMMDD_HHMMSS` | Carpeta única de sesión para PCD, manifests y GPS. |
+| `GPS_METADATA_DIR` | igual que `SESSION_DIR` | Carpeta de metadatos GPS de la sesión. |
 | `GPS_MIN_SATS` | `4` | Satélites mínimos aceptados por el sidecar GPS. |
 | `GPS_MAX_HDOP` | `5.0` | HDOP máximo aceptado. |
 | `GPS_MAX_AGE_MS` | `2000` ms | Edad máxima de la medida reenviada. |
@@ -323,17 +339,20 @@ cd catkin_ws
 
 ## Salidas
 
-Una sesión usa un prefijo como `maps/map_YYYYMMDD_HHMMSS` y puede escribir:
+Una sesión usa una carpeta como `maps/map_YYYYMMDD_HHMMSS/` y escribe:
 
 | Archivo | Formato |
 | --- | --- |
 | `*_lidar.pcd` | LiDAR `PointXYZI`. |
 | `*_camera.pcd` | RealSense `PointXYZRGB`. |
-| `*_fused.pcd` | LiDAR convertido a gris + cámara RGB. |
+| `*_fused_quality.pcd` | LiDAR convertido a gris + cámara RGB aceptada por quality gates. |
+| `manifest.json` | Manifest GPS del sidecar. |
+| `gps.csv`, `gps_raw.jsonl`, `trajectory_gps_map.csv` | Metadatos GPS y asociación GPS/TF. |
 | `*_trajectory_enu.csv` | Trayectoria GPS convertida a ENU por el exportador offline. |
 | `*_points_enu.csv` | Puntos CSV transformados a ENU, si se usa `--points-csv`. |
 | `*_lidar_enu_ascii.pcd` | PCD ASCII transformado a ENU, si se usa `--pcd`. |
 | `*_georef_manifest.json` | Datum, transformada, residuales, productos y warnings del exportador. |
+| `route_lidar_view.html` | Visor offline opcional con ruta GPS/TF sobre la nube LiDAR ASCII. |
 
 `maps/`, `agv_mapping/` y `agv_mapping_test/` contienen artefactos de ejecución, no código. No conviene versionar mapas ni logs nuevos.
 

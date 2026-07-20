@@ -44,6 +44,7 @@ catkin_install_python(PROGRAMS
   scripts/mapping_quality_eval.py
   scripts/mapping_gps_metadata_logger.py
   scripts/georeference_lidar_map.py
+  scripts/visualize_gps_lidar_route.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 

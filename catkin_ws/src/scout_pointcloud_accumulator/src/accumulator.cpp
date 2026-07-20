@@ -63,12 +63,10 @@ public:
     nh_.param<std::string>("output_pcd", output_pcd_, "/tmp/accumulated_cloud.pcd");
     nh_.param<bool>("save_lidar", save_lidar_, true);
     nh_.param<bool>("save_camera", save_camera_, true);
-    nh_.param<bool>("save_camera_diagnostic", save_camera_diagnostic_, true);
-    nh_.param<bool>("save_fused_quality_alias", save_fused_quality_alias_, true);
     nh_.param<double>("camera_intensity", camera_intensity_, 0.0);
     nh_.param<double>("transform_timeout", transform_timeout_, 0.5);
     nh_.param<bool>("use_latest_tf_on_failure", use_latest_tf_on_failure_, false);
-    nh_.param<std::string>("mapping_profile", mapping_profile_, "baseline");
+    nh_.param<std::string>("mapping_profile", mapping_profile_, "quality");
     nh_.param<std::string>("run_git_commit", run_git_commit_, "unknown");
     nh_.param<std::string>("capture_manifest", capture_manifest_, "");
     nh_.param<std::string>("camera_outlier_filter", camera_outlier_filter_, "none");
@@ -134,7 +132,6 @@ public:
     pub_ = nh_.advertise<sensor_msgs::PointCloud2>("/accumulated_points", 1, true);
     lidar_pub_ = nh_.advertise<sensor_msgs::PointCloud2>("/accumulated_lidar_points", 1, true);
     camera_pub_ = nh_.advertise<sensor_msgs::PointCloud2>("/accumulated_camera_points", 1, true);
-    camera_diagnostic_pub_ = nh_.advertise<sensor_msgs::PointCloud2>("/accumulated_camera_diagnostic_points", 1, true);
     camera_instant_pub_ = nh_.advertise<sensor_msgs::PointCloud2>("/camera/colored_points", 1, false);
     save_srv_ = nh_.advertiseService("save_accumulated", &AccumulatorNode::saveService, this);
   }
@@ -383,13 +380,11 @@ public:
     }
 
     std::lock_guard<std::mutex> lock(mutex_);
-    appendAndFilter(accumulated_camera_diagnostic_rgb_, diagnostic_rgb, camera_voxel_size_);
-    publishCloud(accumulated_camera_diagnostic_rgb_, camera_diagnostic_pub_, stamp);
     ++camera_frames_base_valid_;
 
     if (!accepted_for_quality) {
       ROS_INFO_THROTTLE(5.0,
-                        "RealSense camera frame kept in camera_diagnostic but rejected from fused_quality: reason=%s points=%zu",
+                        "RealSense camera frame rejected from quality map: reason=%s points=%zu",
                         reject_reason.c_str(),
                         quality_rgb.size());
       publishCloud(accumulated_camera_rgb_, camera_pub_, stamp);
@@ -424,8 +419,6 @@ public:
     const std::string snapshot_id = makeSnapshotId();
     const std::string lidar_path = appendSuffixToPath(path, "_lidar");
     const std::string camera_path = appendSuffixToPath(path, "_camera");
-    const std::string camera_diagnostic_path = appendSuffixToPath(path, "_camera_diagnostic");
-    const std::string fused_path = appendSuffixToPath(path, "_fused");
     const std::string fused_quality_path = appendSuffixToPath(path, "_fused_quality");
     const std::string manifest_path = replaceSuffixAndExtension(path, "_manifest", ".json");
 
@@ -456,19 +449,6 @@ public:
       ROS_WARN("Camera-only cloud is empty; not saving %s", camera_path.c_str());
     }
 
-    if (save_camera_diagnostic_ && !accumulated_camera_diagnostic_rgb_.empty()) {
-      if (savePointCloudAtomically(camera_diagnostic_path,
-                                   accumulated_camera_diagnostic_rgb_,
-                                   "RGB camera diagnostic")) {
-        saved_any = true;
-        artifacts.push_back(describeSavedArtifact("camera_diagnostic", camera_diagnostic_path));
-      }
-    } else if (!save_camera_diagnostic_) {
-      ROS_INFO("Camera diagnostic save disabled; not saving %s", camera_diagnostic_path.c_str());
-    } else {
-      ROS_WARN("Camera diagnostic cloud is empty; not saving %s", camera_diagnostic_path.c_str());
-    }
-
     pcl::PointCloud<pcl::PointXYZRGB> fused_rgb;
     if (save_lidar_) {
       appendXYZIAsGray(accumulated_lidar_, fused_rgb);
@@ -480,22 +460,17 @@ public:
       if (voxel_size_ > 0.0) {
         applyVoxelFilter(fused_rgb, voxel_size_);
       }
-      if (savePointCloudAtomically(fused_path, fused_rgb, "fused LiDAR+RGB camera")) {
-        saved_any = true;
-        artifacts.push_back(describeSavedArtifact("fused_quality_legacy", fused_path));
-      }
-      if (save_fused_quality_alias_ &&
-          savePointCloudAtomically(fused_quality_path, fused_rgb, "fused_quality LiDAR+RGB camera")) {
+      if (savePointCloudAtomically(fused_quality_path, fused_rgb, "fused_quality LiDAR+RGB camera")) {
         saved_any = true;
         artifacts.push_back(describeSavedArtifact("fused_quality", fused_quality_path));
       }
     } else if (!save_lidar_ || !save_camera_) {
-      ROS_INFO("Fused save disabled because LiDAR=%s Camera=%s; not saving %s",
+      ROS_INFO("Fused quality save disabled because LiDAR=%s Camera=%s; not saving %s",
                save_lidar_ ? "true" : "false",
                save_camera_ ? "true" : "false",
-               fused_path.c_str());
+               fused_quality_path.c_str());
     } else {
-      ROS_WARN("Fused cloud is empty; not saving %s", fused_path.c_str());
+      ROS_WARN("Fused quality cloud is empty; not saving %s", fused_quality_path.c_str());
     }
 
     if (saved_any) {
@@ -557,7 +532,7 @@ private:
       throw std::runtime_error("ROR requires camera_ror_radius > 0 and camera_ror_min_neighbors >= 1.");
     }
     if (use_latest_tf_on_failure_) {
-      ROS_WARN("use_latest_tf_on_failure=true is enabled. This is for diagnostics only; baseline/quality profiles should keep it false.");
+      ROS_WARN("use_latest_tf_on_failure=true is enabled. This is for diagnostics only; quality mapping should keep it false.");
     }
   }
 
@@ -920,7 +895,6 @@ private:
     out << "  \"capture_manifest\": \"" << jsonEscape(capture_manifest_) << "\",\n";
     out << "  \"target_frame\": \"" << jsonEscape(target_frame_) << "\",\n";
     out << "  \"products\": {\n";
-    out << "    \"camera_diagnostic\": \"base-valid camera frames after range/TF; quality rejects are preserved here\",\n";
     out << "    \"fused_quality\": \"LiDAR plus camera frames accepted by quality gates\"\n";
     out << "  },\n";
     out << "  \"parameters\": {\n";
@@ -1518,7 +1492,6 @@ private:
   ros::Publisher pub_;
   ros::Publisher lidar_pub_;
   ros::Publisher camera_pub_;
-  ros::Publisher camera_diagnostic_pub_;
   ros::Publisher camera_instant_pub_;
   ros::ServiceServer save_srv_;
   tf2_ros::Buffer tfBuffer_;
@@ -1527,7 +1500,6 @@ private:
   pcl::PointCloud<pcl::PointXYZI> accumulated_lidar_;
   pcl::PointCloud<pcl::PointXYZI> accumulated_camera_;
   pcl::PointCloud<pcl::PointXYZRGB> accumulated_camera_rgb_;
-  pcl::PointCloud<pcl::PointXYZRGB> accumulated_camera_diagnostic_rgb_;
   std::mutex mutex_;
   std::mutex color_mutex_;
   std::deque<sensor_msgs::ImageConstPtr> color_image_queue_;
@@ -1538,8 +1510,6 @@ private:
   bool use_aligned_depth_for_camera_;
   bool save_lidar_;
   bool save_camera_;
-  bool save_camera_diagnostic_;
-  bool save_fused_quality_alias_;
   std::string lidar_topic_;
   std::string camera_topic_;
   std::string camera_depth_topic_;
