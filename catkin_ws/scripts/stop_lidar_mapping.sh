@@ -13,12 +13,35 @@ if [ -f "$WORKSPACE/devel/setup.bash" ]; then
   source "$WORKSPACE/devel/setup.bash" >/dev/null 2>&1 || true
 fi
 
-if rosnode list 2>/dev/null | grep -qx "/accumulator_node"; then
+ROSNODE_CMD="${ROSNODE_CMD:-rosnode}"
+ROSSERVICE_CMD="${ROSSERVICE_CMD:-rosservice}"
+TIMEOUT_CMD="${TIMEOUT_CMD:-timeout}"
+GPS_METADATA_NODE="${GPS_METADATA_NODE:-/mapping_gps_metadata_logger}"
+GPS_METADATA_SAVE_SERVICE="${GPS_METADATA_SAVE_SERVICE:-${GPS_METADATA_NODE}/save_metadata}"
+GPS_METADATA_SAVE_TIMEOUT_SEC="${GPS_METADATA_SAVE_TIMEOUT_SEC:-10}"
+
+save_gps_metadata_if_available() {
+  if "$ROSNODE_CMD" list 2>/dev/null | grep -qx "$GPS_METADATA_NODE"; then
+    echo "Saving GPS metadata sidecar..."
+    if ! "$TIMEOUT_CMD" "${GPS_METADATA_SAVE_TIMEOUT_SEC}s" "$ROSSERVICE_CMD" call "$GPS_METADATA_SAVE_SERVICE" "{}" >/dev/null 2>&1; then
+      echo "ERROR: GPS metadata save did not complete before shutdown; continuing stop." >&2
+      return 1
+    fi
+  fi
+  return 0
+}
+
+stop_status=0
+
+if "$ROSNODE_CMD" list 2>/dev/null | grep -qx "/accumulator_node"; then
   echo "Saving accumulated clouds before shutdown..."
-  if ! timeout 30s rosservice call /accumulator_node/save_accumulated "{}" >/dev/null 2>&1; then
+  if ! "$TIMEOUT_CMD" 30s "$ROSSERVICE_CMD" call /accumulator_node/save_accumulated "{}" >/dev/null 2>&1; then
     echo "WARNING: save_accumulated did not complete before shutdown; continuing stop."
+    stop_status=1
   fi
 fi
+
+save_gps_metadata_if_available || stop_status=1
 
 if [ ! -f "$PID_FILE" ]; then
   echo "No PID file found. Will still try to stop known ROS mapping nodes."
@@ -46,6 +69,7 @@ fi
 # roslaunch may have exited while nodelets stayed alive. Kill known mapping nodes too.
 for node in \
   /accumulator_node \
+  /mapping_gps_metadata_logger \
   /base_link_to_realsense \
   /camera/realsense2_camera \
   /camera/realsense2_camera_manager \
@@ -64,11 +88,12 @@ for node in \
   /velodyne_nodelet_manager_driver \
   /velodyne_nodelet_manager_laserscan \
   /velodyne_nodelet_manager_transform; do
-  if rosnode list 2>/dev/null | grep -qx "$node"; then
+  if "$ROSNODE_CMD" list 2>/dev/null | grep -qx "$node"; then
     echo "Stopping ROS node $node"
-    rosnode kill "$node" >/dev/null 2>&1 || true
+    "$ROSNODE_CMD" kill "$node" >/dev/null 2>&1 || true
   fi
 done
 
 
 echo "Stopped mapping processes."
+exit "$stop_status"

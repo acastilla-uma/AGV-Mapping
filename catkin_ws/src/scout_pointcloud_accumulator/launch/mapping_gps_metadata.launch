@@ -1,0 +1,58 @@
+<launch>
+  <arg name="output_pcd" default="/tmp/accumulated_cloud.pcd" />
+  <arg name="metadata_dir" default="" />
+  <arg name="target_frame" default="map" />
+  <arg name="robot_frame" default="base_link" />
+  <arg name="gps_frame" default="gps_link" />
+
+  <arg name="gps_tcp_bind" default="127.0.0.1" />
+  <arg name="gps_tcp_port" default="29500" />
+  <arg name="gps_allowed_hosts" default="" />
+
+  <arg name="gps_min_sats" default="4" />
+  <arg name="gps_max_hdop" default="5.0" />
+  <arg name="gps_max_age_ms" default="2000" />
+  <arg name="gps_require_fix" default="true" />
+  <arg name="gps_require_sats" default="true" />
+  <arg name="gps_require_hdop" default="true" />
+  <arg name="gps_require_age" default="true" />
+  <arg name="gps_association_max_age_sec" default="2.0" />
+  <arg name="gps_tf_wait_timeout_sec" default="0.5" />
+  <arg name="gps_max_line_bytes" default="8192" />
+
+  <arg name="datum_mode" default="first_valid_fix" />
+  <arg name="datum_latitude" default="" />
+  <arg name="datum_longitude" default="" />
+  <arg name="datum_altitude" default="" />
+
+  <arg name="trajectory_path_topic" default="/gps_map_trajectory_path" />
+  <arg name="trajectory_max_points" default="10000" />
+
+  <node pkg="scout_pointcloud_accumulator" type="mapping_gps_metadata_logger.py"
+        name="mapping_gps_metadata_logger" output="screen">
+    <param name="output_pcd" value="$(arg output_pcd)" />
+    <param name="metadata_dir" value="$(arg metadata_dir)" />
+    <param name="target_frame" value="$(arg target_frame)" />
+    <param name="robot_frame" value="$(arg robot_frame)" />
+    <param name="gps_frame" value="$(arg gps_frame)" />
+    <param name="gps_tcp_bind" value="$(arg gps_tcp_bind)" />
+    <param name="gps_tcp_port" value="$(arg gps_tcp_port)" />
+    <param name="gps_allowed_hosts" value="$(arg gps_allowed_hosts)" />
+    <param name="gps_min_sats" value="$(arg gps_min_sats)" />
+    <param name="gps_max_hdop" value="$(arg gps_max_hdop)" />
+    <param name="gps_max_age_ms" value="$(arg gps_max_age_ms)" />
+    <param name="gps_require_fix" value="$(arg gps_require_fix)" />
+    <param name="gps_require_sats" value="$(arg gps_require_sats)" />
+    <param name="gps_require_hdop" value="$(arg gps_require_hdop)" />
+    <param name="gps_require_age" value="$(arg gps_require_age)" />
+    <param name="gps_association_max_age_sec" value="$(arg gps_association_max_age_sec)" />
+    <param name="gps_tf_wait_timeout_sec" value="$(arg gps_tf_wait_timeout_sec)" />
+    <param name="gps_max_line_bytes" value="$(arg gps_max_line_bytes)" />
+    <param name="datum_mode" value="$(arg datum_mode)" />
+    <param name="datum_latitude" value="$(arg datum_latitude)" />
+    <param name="datum_longitude" value="$(arg datum_longitude)" />
+    <param name="datum_altitude" value="$(arg datum_altitude)" />
+    <param name="trajectory_path_topic" value="$(arg trajectory_path_topic)" />
+    <param name="trajectory_max_points" value="$(arg trajectory_max_points)" />
+  </node>
+</launch>

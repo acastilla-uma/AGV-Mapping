@@ -29,10 +29,14 @@ flowchart LR
     L -->|/registered_cloud| A["accumulator_node"]
     L -->|pose y TF| T["frame global map"]
     R["RealSense D435"] -->|depth alineado + RGB + CameraInfo| A
+    G["LilyGO T-Echo GPS"] -->|BLE al PC + TCP a Jetson| M["mapping_gps_metadata_logger"]
+    M -->|/gps/fix + trajectory_gps_map.csv| E["export georreferenciado offline"]
     T --> A
+    T --> M
     C["calibración base_link → camera_link"] --> A
     A -->|topics| Z["RViz"]
     A -->|save_accumulated| P["PCD LiDAR / cámara / fusionado"]
+    E -->|ENU + manifest + residuales| P
 ```
 
 | Componente | Responsabilidad |
@@ -41,6 +45,7 @@ flowchart LR
 | [`accumulator.cpp`](catkin_ws/src/scout_pointcloud_accumulator/src/accumulator.cpp) | Transforma, filtra, acumula, publica y guarda las nubes. |
 | [`accumulate.launch`](catkin_ws/src/scout_pointcloud_accumulator/launch/accumulate.launch) | Configura el acumulador y la TF estática de cámara; no inicia sensores. |
 | [`realsense_mapping.launch`](catkin_ws/src/scout_pointcloud_accumulator/launch/realsense_mapping.launch) | Configura profundidad/color alineados de RealSense. |
+| [`mapping_gps_metadata.launch`](catkin_ws/src/scout_pointcloud_accumulator/launch/mapping_gps_metadata.launch) | Nodo GPS integrado en `start_lidar_mapping.sh` para recibir GPS por TCP, publicar `/gps/fix` y guardar metadatos asociados a la trayectoria `map → base_link`. |
 | [`run.launch`](catkin_ws/src/LeGO-LOAM/LeGO-LOAM/launch/run.launch) | Inicia los cuatro nodos principales de LeGO-LOAM. |
 | [`open_rslidar.launch`](catkin_ws/src/scout_base/scout_bringup/launch/open_rslidar.launch) | Inicia el pipeline Velodyne y la TF `base_link → velodyne`. El nombre es histórico. |
 
@@ -113,6 +118,7 @@ La extrínseca de cámara se carga desde [`camera_lidar_calibration.yaml`](catki
 | `/camera/color/image_raw` | Imagen de color. |
 | `/camera/color/camera_info` | Intrínsecos de cámara. |
 | `/camera/depth/color/points` | Entrada alternativa `PointCloud2` de cámara. |
+| TCP `gps_tcp_port` | Muestras GPS reenviadas desde el PC operador; por defecto puerto `29500`. |
 
 ### Salidas
 
@@ -123,7 +129,10 @@ La extrínseca de cámara se carga desde [`camera_lidar_calibration.yaml`](catki
 | `/accumulated_camera_points` | Cámara acumulada XYZRGB. |
 | `/camera/colored_points` | Nube RGB instantánea reconstruida. |
 | `/agv/direction_marker` | Flecha y etiqueta que indican en RViz el frente detectado del AGV. |
+| `/gps/fix` | Fix GPS aceptado por el sidecar. |
+| `/gps_map_trajectory_path` | Trayectoria diagnóstica de pares GPS/TF aceptados. |
 | `/accumulator_node/save_accumulated` | Servicio `std_srvs/Empty` que guarda los PCD. |
+| `/mapping_gps_metadata_logger/save_metadata` | Servicio del sidecar GPS que fuerza el manifest. |
 
 ## Compilación
 
@@ -172,7 +181,80 @@ SAVE_LIDAR=false SAVE_CAMERA=true ./scripts/start_lidar_mapping.sh
 ./scripts/stop_lidar_mapping.sh
 ```
 
-La parada intenta guardar primero y aplica un timeout de 30 segundos. Para una sesión importante, guarde explícitamente y compruebe el resultado antes de detener.
+La parada intenta guardar primero y aplica un timeout de 30 segundos. Si el sidecar GPS está activo, ambos scripts también llaman a `/mapping_gps_metadata_logger/save_metadata`; si ese guardado falla, devuelven código no cero. `stop_lidar_mapping.sh` aun así continúa apagando nodos para no dejar el sistema vivo a medias. Si el sidecar no está activo, continúan sin error. Para una sesión importante, guarde explícitamente y compruebe el resultado antes de detener.
+
+### GPS LilyGO T-Echo automático
+
+La geolocalización GPS se lanza automáticamente desde `start_lidar_mapping.sh` como sidecar ROS en la Jetson. No mete dependencias BLE dentro de ROS: el Bluetooth sigue viviendo en el PC operador. La arquitectura esperada es:
+
+```text
+LilyGO T-Echo en el AGV → Bluetooth al PC operador → TCP por LAN a Jetson → nodo ROS GPS → metadatos + export offline
+```
+
+En la Jetson, lance mapeo y receptor GPS juntos indicando la IP del PC operador:
+
+```bash
+cd catkin_ws
+source /opt/ros/melodic/setup.bash
+source devel/setup.bash
+
+GPS_ALLOWED_HOSTS=192.168.8.10 ./scripts/start_lidar_mapping.sh
+```
+
+Por defecto el arranque integrado usa `ENABLE_GPS=true`, `GPS_TCP_BIND=0.0.0.0` y `GPS_TCP_PORT=29500`; por seguridad exige `GPS_ALLOWED_HOSTS` para abrirse a la LAN. Para desactivar el sidecar GPS en una sesión concreta:
+
+```bash
+ENABLE_GPS=false ./scripts/start_lidar_mapping.sh
+```
+
+Variables útiles del arranque integrado: `ENABLE_GPS`, `GPS_METADATA_DIR`, `GPS_TCP_BIND`, `GPS_TCP_PORT`, `GPS_ALLOWED_HOSTS`, `GPS_MIN_SATS`, `GPS_MAX_HDOP`, `GPS_MAX_AGE_MS`, `GPS_REQUIRE_FIX`, `GPS_REQUIRE_SATS`, `GPS_REQUIRE_HDOP`, `GPS_REQUIRE_AGE`, `GPS_ASSOCIATION_MAX_AGE_SEC`, `GPS_TF_WAIT_TIMEOUT_SEC`, `GPS_MAX_LINE_BYTES`, `GPS_FRAME`, `GPS_ROBOT_FRAME`, `GPS_DATUM_LATITUDE`, `GPS_DATUM_LONGITUDE` y `GPS_DATUM_ALTITUDE`.
+
+En el PC operador, primero identifique el LilyGO y capture evidencia:
+
+```bash
+python3 catkin_ws/scripts/lilygo_ble_probe.py \
+  --name LilyGO,T-Echo \
+  --scan-seconds 15 \
+  --listen-seconds 30 \
+  --output /tmp/lilygo_probe.jsonl
+```
+
+Después reenvíe las notificaciones BLE a la Jetson. Use en `--jetson-host` la IP real de la Jetson y asegúrese de que `GPS_ALLOWED_HOSTS` en la Jetson contiene la IP del PC:
+
+```bash
+python3 catkin_ws/scripts/lilygo_ble_tcp_bridge.py \
+  --address XX:XX:XX:XX:XX:XX \
+  --jetson-host 192.168.8.174 \
+  --jetson-port 29500 \
+  --listen-seconds 0 \
+  --output /tmp/lilygo_bridge.jsonl
+```
+
+El logger acepta líneas JSON, pares `clave=valor` y frases NMEA tipo GGA/RMC. Campos normalizados: `latitude`, `longitude`, `altitude`, `sats`, `hdop`, `fix_ok`, `measurement_age_ms`, `raw_text` y `raw_hex`. Las muestras se aceptan sólo si tienen latitud/longitud, fix válido cuando `gps_require_fix=true`, al menos `gps_min_sats`, `hdop <= gps_max_hdop` y edad menor o igual a `gps_max_age_ms`. El `time_utc` del bridge BLE es sólo tiempo de transporte y no sustituye `age_ms`/`measurement_age_ms`; si no llega una edad explícita, la muestra se rechaza con `missing_age`. La asociación con la trayectoria usa `estimated_measurement_ros_time`, no el instante de recepción; si la edad supera `gps_association_max_age_sec` o no hay TF para ese timestamp, `trajectory_gps_map.csv` deja `tf_ok=0` y rellena `association_rejection_reason`.
+
+El directorio `metadata_dir` contiene:
+
+| Archivo | Contenido |
+| --- | --- |
+| `gps.csv` | Todas las muestras normalizadas con motivo de rechazo si aplica. |
+| `gps_raw.jsonl` | Payload original más envelope de recepción. |
+| `trajectory_gps_map.csv` | Muestras aceptadas y su intento de asociación a TF `map → base_link` en el timestamp estimado de medida. |
+| `manifest.json` | Umbrales, frames, contadores, datum policy y rutas generadas. |
+
+Para generar productos georreferenciados offline:
+
+```bash
+python3 catkin_ws/src/scout_pointcloud_accumulator/scripts/georeference_lidar_map.py \
+  --trajectory datos/gps_metadata_sesion/trajectory_gps_map.csv \
+  --pcd maps/map_YYYYMMDD_HHMMSS_lidar.pcd \
+  --datum-latitude 38.000000 \
+  --datum-longitude -4.000000 \
+  --datum-altitude 100.0 \
+  --output-dir maps/georef_sesion \
+  --output-prefix map_YYYYMMDD_HHMMSS
+```
+
+El exportador usa WGS84 a ENU con datum manual o con `datum_policy` manual leído desde `--metadata-manifest`. El origen `first_valid_fix` sólo está permitido si se pasa `--allow-first-fix-datum`, para exportación exploratoria no reproducible. El ajuste es una similitud 2D más offset vertical entre `map` y ENU, y escribe manifest con `pair_count`, escala, yaw y residuales. Sólo exporta PCD ASCII; si recibe un PCD binario lo informa como no exportado en `warnings` en vez de fingir soporte.
 
 ### Visualizar
 
@@ -225,6 +307,17 @@ cd catkin_ws
 | `CAMERA_OUTPUT_READY_TIMEOUT` | `30` s | Límite para validar `/camera/colored_points` tras arrancar el acumulador. |
 | `LEGO_USE_IMU` | `false` | Activa la IMU de LeGO-LOAM. |
 | `LEGO_LOCK_ROLL_PITCH` | `true` | Limita deriva de roll/pitch. |
+| `ENABLE_GPS` | `true` | Lanza el sidecar GPS junto con `start_lidar_mapping.sh`; use `false` para sesiones sin GPS. |
+| `GPS_ALLOWED_HOSTS` | vacío | IPs del PC operador autorizadas para enviar GPS a la Jetson; obligatorio si `GPS_TCP_BIND` no es loopback. |
+| `GPS_METADATA_DIR` | `datos/gps_metadata_YYYYMMDD_HHMMSS` | Carpeta de metadatos GPS de la sesión. |
+| `GPS_MIN_SATS` | `4` | Satélites mínimos aceptados por el sidecar GPS. |
+| `GPS_MAX_HDOP` | `5.0` | HDOP máximo aceptado. |
+| `GPS_MAX_AGE_MS` | `2000` ms | Edad máxima de la medida reenviada. |
+| `GPS_REQUIRE_FIX` | `true` | Rechaza muestras sin fix válido. |
+| `GPS_REQUIRE_SATS`, `GPS_REQUIRE_HDOP`, `GPS_REQUIRE_AGE` | `true` | Exige que los campos de calidad existan, no sólo que estén dentro de umbral cuando aparecen. |
+| `GPS_ASSOCIATION_MAX_AGE_SEC` | `2.0` s | Ventana nominal de asociación GPS/TF documentada en el manifest. |
+| `GPS_TF_WAIT_TIMEOUT_SEC` | `0.5` s | Espera máxima de TF al buscar `map → base_link` en el timestamp estimado de medida. |
+| `GPS_MAX_LINE_BYTES` | `8192` | Tamaño máximo de una línea TCP antes de cerrar o descartar el payload. |
 
 `CAMERA_PARENT_FRAME`, `CAMERA_CHILD_FRAME`, `CAMERA_XYZ` y `CAMERA_RPY` definidos en el entorno prevalecen sobre el YAML.
 
@@ -237,6 +330,10 @@ Una sesión usa un prefijo como `maps/map_YYYYMMDD_HHMMSS` y puede escribir:
 | `*_lidar.pcd` | LiDAR `PointXYZI`. |
 | `*_camera.pcd` | RealSense `PointXYZRGB`. |
 | `*_fused.pcd` | LiDAR convertido a gris + cámara RGB. |
+| `*_trajectory_enu.csv` | Trayectoria GPS convertida a ENU por el exportador offline. |
+| `*_points_enu.csv` | Puntos CSV transformados a ENU, si se usa `--points-csv`. |
+| `*_lidar_enu_ascii.pcd` | PCD ASCII transformado a ENU, si se usa `--pcd`. |
+| `*_georef_manifest.json` | Datum, transformada, residuales, productos y warnings del exportador. |
 
 `maps/`, `agv_mapping/` y `agv_mapping_test/` contienen artefactos de ejecución, no código. No conviene versionar mapas ni logs nuevos.
 
@@ -250,6 +347,8 @@ rostopic hz /accumulated_lidar_points
 rostopic hz /camera/colored_points
 rostopic hz /accumulated_camera_points
 rosservice list | grep save_accumulated
+rostopic echo -n1 /gps/fix
+rosservice call /mapping_gps_metadata_logger/save_metadata "{}"
 ```
 
 ### TF
@@ -288,12 +387,17 @@ tail -f agv_mapping/logs/accumulator.log
 | No aparece color | Depth alineado, RGB, CameraInfo y TF óptica. |
 | Cámara desplazada | YAML de calibración y publicadores TF duplicados. |
 | Mapa en abanico | Script de roll/pitch, IMU y extrínsecas. |
+| No se genera `trajectory_gps_map.csv` | Verifique que el nodo GPS está lanzado, que llegan líneas TCP y que existe TF `map → base_link`. |
+| Muchas muestras GPS rechazadas | Revise `rejection_reason` en `gps.csv`: `fix_not_valid`, `low_sats`, `high_hdop`, `stale_age` o `missing_lat_lon`. |
+| Export georreferenciado con RMS alto | Use más pares distribuidos espacialmente, valide datum y confirme que el GPS está rígidamente situado respecto al AGV. |
 
 ## Limitaciones conocidas
 
 - [`view_latest_pcd.sh`](catkin_ws/scripts/view_latest_pcd.sh) usa `/mnt/ros/maps` como ruta histórica si no recibe un argumento; desde `catkin_ws`, use `../maps`.
 - La TF `base_link → velodyne` y los valores iniciales de cámara deben validarse físicamente antes de considerar el resultado métricamente calibrado.
 - No hay tests unitarios específicos del acumulador. La verificación completa requiere sensores reales o una grabación ROS reproducible.
+- La integración GPS incluida aquí está verificada con parsers, fixtures y scripts locales; falta una prueba de campo con LilyGO T-Echo real, Bluetooth del PC y Jetson en la misma red.
+- La georreferenciación offline estima una transformada `map → ENU` desde pares GPS/TF; no sustituye SLAM, RTK ni una calibración temporal rigurosa.
 
 ## Desarrollo
 

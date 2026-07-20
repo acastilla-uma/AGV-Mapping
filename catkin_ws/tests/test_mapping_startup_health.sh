@@ -144,6 +144,16 @@ if grep -q 'mapping_metadata' "$ROOT_DIR/catkin_ws/scripts/start_lidar_mapping.s
     "$ROOT_DIR/catkin_ws/src/scout_pointcloud_accumulator/CMakeLists.txt"; then
   fail "stale mapping-metadata integration is still referenced"
 fi
+grep -q 'ENABLE_GPS="${ENABLE_GPS:-true}"' \
+  "$ROOT_DIR/catkin_ws/scripts/start_lidar_mapping.sh" || fail "GPS auto-start default missing"
+grep -q 'GPS_ALLOWED_HOSTS=IP_DE_TU_PC' \
+  "$ROOT_DIR/catkin_ws/scripts/start_lidar_mapping.sh" || fail "GPS LAN allowlist diagnostic missing"
+grep -q 'roslaunch scout_pointcloud_accumulator mapping_gps_metadata.launch' \
+  "$ROOT_DIR/catkin_ws/scripts/start_lidar_mapping.sh" || fail "GPS metadata launch is not started by mapping startup"
+grep -q 'wait_for_ros_node /mapping_gps_metadata_logger 10' \
+  "$ROOT_DIR/catkin_ws/scripts/start_lidar_mapping.sh" || fail "GPS metadata startup is not verified"
+grep -q 'tail -f $LOG_DIR/gps_metadata.log' \
+  "$ROOT_DIR/catkin_ws/scripts/start_lidar_mapping.sh" || fail "GPS metadata log is not advertised"
 
 grep -q 'REALSENSE_INITIAL_RESET="${REALSENSE_INITIAL_RESET:-false}"' \
   "$ROOT_DIR/catkin_ws/scripts/start_lidar_mapping.sh" || fail "unsafe RealSense reset default restored"

@@ -3,6 +3,7 @@ project(scout_pointcloud_accumulator)
 
 find_package(catkin REQUIRED COMPONENTS
   geometry_msgs
+  nav_msgs
   roscpp
   rospy
   sensor_msgs
@@ -18,7 +19,7 @@ find_package(catkin REQUIRED COMPONENTS
 find_package(PCL REQUIRED)
 
 catkin_package(
-  CATKIN_DEPENDS geometry_msgs roscpp rospy sensor_msgs pcl_ros pcl_conversions tf tf2_ros tf2_sensor_msgs visualization_msgs std_srvs
+  CATKIN_DEPENDS geometry_msgs nav_msgs roscpp rospy sensor_msgs pcl_ros pcl_conversions tf tf2_ros tf2_sensor_msgs visualization_msgs std_srvs
 )
 
 include_directories(
@@ -41,6 +42,8 @@ catkin_install_python(PROGRAMS
   scripts/camera_lidar_calibration_env.py
   scripts/agv_direction_marker.py
   scripts/mapping_quality_eval.py
+  scripts/mapping_gps_metadata_logger.py
+  scripts/georeference_lidar_map.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 

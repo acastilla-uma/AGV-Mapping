@@ -125,6 +125,29 @@ TRANSFORM_TIMEOUT="${TRANSFORM_TIMEOUT:-0.5}"
 USE_LATEST_TF_ON_FAILURE="${USE_LATEST_TF_ON_FAILURE:-false}"
 LEGO_USE_IMU="${LEGO_USE_IMU:-false}"
 LEGO_LOCK_ROLL_PITCH="${LEGO_LOCK_ROLL_PITCH:-true}"
+ENABLE_GPS="${ENABLE_GPS:-true}"
+GPS_METADATA_DIR="${GPS_METADATA_DIR:-$ROS_ROOT_DIR/datos/gps_metadata_$(date +%Y%m%d_%H%M%S)}"
+GPS_TCP_BIND="${GPS_TCP_BIND:-0.0.0.0}"
+GPS_TCP_PORT="${GPS_TCP_PORT:-29500}"
+GPS_ALLOWED_HOSTS="${GPS_ALLOWED_HOSTS:-}"
+GPS_FRAME="${GPS_FRAME:-gps_link}"
+GPS_ROBOT_FRAME="${GPS_ROBOT_FRAME:-base_link}"
+GPS_MIN_SATS="${GPS_MIN_SATS:-4}"
+GPS_MAX_HDOP="${GPS_MAX_HDOP:-5.0}"
+GPS_MAX_AGE_MS="${GPS_MAX_AGE_MS:-2000}"
+GPS_REQUIRE_FIX="${GPS_REQUIRE_FIX:-true}"
+GPS_REQUIRE_SATS="${GPS_REQUIRE_SATS:-true}"
+GPS_REQUIRE_HDOP="${GPS_REQUIRE_HDOP:-true}"
+GPS_REQUIRE_AGE="${GPS_REQUIRE_AGE:-true}"
+GPS_ASSOCIATION_MAX_AGE_SEC="${GPS_ASSOCIATION_MAX_AGE_SEC:-2.0}"
+GPS_TF_WAIT_TIMEOUT_SEC="${GPS_TF_WAIT_TIMEOUT_SEC:-0.5}"
+GPS_MAX_LINE_BYTES="${GPS_MAX_LINE_BYTES:-8192}"
+GPS_DATUM_MODE="${GPS_DATUM_MODE:-first_valid_fix}"
+GPS_DATUM_LATITUDE="${GPS_DATUM_LATITUDE:-}"
+GPS_DATUM_LONGITUDE="${GPS_DATUM_LONGITUDE:-}"
+GPS_DATUM_ALTITUDE="${GPS_DATUM_ALTITUDE:-}"
+GPS_TRAJECTORY_PATH_TOPIC="${GPS_TRAJECTORY_PATH_TOPIC:-/gps_map_trajectory_path}"
+GPS_TRAJECTORY_MAX_POINTS="${GPS_TRAJECTORY_MAX_POINTS:-10000}"
 
 if [ -f "$CAMERA_CALIBRATION_FILE" ]; then
   eval "$(python "$CATKIN_WS_DIR/src/scout_pointcloud_accumulator/scripts/camera_lidar_calibration_env.py" "$CAMERA_CALIBRATION_FILE")"
@@ -173,6 +196,11 @@ mapping_validate_bool REALSENSE_ENABLE_POINTCLOUD "$REALSENSE_ENABLE_POINTCLOUD"
 mapping_validate_bool REALSENSE_ALIGN_DEPTH "$REALSENSE_ALIGN_DEPTH"
 mapping_validate_bool REALSENSE_ENABLE_SYNC "$REALSENSE_ENABLE_SYNC"
 mapping_validate_bool REALSENSE_INITIAL_RESET "$REALSENSE_INITIAL_RESET"
+mapping_validate_bool ENABLE_GPS "$ENABLE_GPS"
+mapping_validate_bool GPS_REQUIRE_FIX "$GPS_REQUIRE_FIX"
+mapping_validate_bool GPS_REQUIRE_SATS "$GPS_REQUIRE_SATS"
+mapping_validate_bool GPS_REQUIRE_HDOP "$GPS_REQUIRE_HDOP"
+mapping_validate_bool GPS_REQUIRE_AGE "$GPS_REQUIRE_AGE"
 mapping_validate_choice CAMERA_OUTLIER_FILTER "$CAMERA_OUTLIER_FILTER" none sor ror
 mapping_validate_number_min VOXEL_SIZE "$VOXEL_SIZE" 0 true
 mapping_validate_number_min LIDAR_VOXEL_SIZE "$LIDAR_VOXEL_SIZE" 0 true
@@ -199,6 +227,22 @@ mapping_validate_int_min REALSENSE_COLOR_WIDTH "$REALSENSE_COLOR_WIDTH" 1
 mapping_validate_int_min REALSENSE_COLOR_HEIGHT "$REALSENSE_COLOR_HEIGHT" 1
 mapping_validate_int_min REALSENSE_DEPTH_FPS "$REALSENSE_DEPTH_FPS" 1
 mapping_validate_int_min REALSENSE_COLOR_FPS "$REALSENSE_COLOR_FPS" 1
+mapping_validate_int_min GPS_TCP_PORT "$GPS_TCP_PORT" 1
+mapping_validate_int_min GPS_MIN_SATS "$GPS_MIN_SATS" 0
+mapping_validate_number_min GPS_MAX_HDOP "$GPS_MAX_HDOP" 0 false
+mapping_validate_number_min GPS_MAX_AGE_MS "$GPS_MAX_AGE_MS" 0 false
+mapping_validate_number_min GPS_ASSOCIATION_MAX_AGE_SEC "$GPS_ASSOCIATION_MAX_AGE_SEC" 0 false
+mapping_validate_number_min GPS_TF_WAIT_TIMEOUT_SEC "$GPS_TF_WAIT_TIMEOUT_SEC" 0 true
+mapping_validate_int_min GPS_MAX_LINE_BYTES "$GPS_MAX_LINE_BYTES" 1
+mapping_validate_int_min GPS_TRAJECTORY_MAX_POINTS "$GPS_TRAJECTORY_MAX_POINTS" 0
+if [ "$ENABLE_GPS" = "true" ] && [ "$GPS_TCP_BIND" != "127.0.0.1" ] && \
+   [ "$GPS_TCP_BIND" != "localhost" ] && [ "$GPS_TCP_BIND" != "::1" ] && \
+   [ -z "$GPS_ALLOWED_HOSTS" ]; then
+  echo "ERROR: ENABLE_GPS=true with GPS_TCP_BIND=$GPS_TCP_BIND requires GPS_ALLOWED_HOSTS=IP_DE_TU_PC." >&2
+  echo "Example: GPS_ALLOWED_HOSTS=192.168.8.10 ./scripts/start_lidar_mapping.sh" >&2
+  echo "Or disable GPS startup with: ENABLE_GPS=false ./scripts/start_lidar_mapping.sh" >&2
+  exit 1
+fi
 
 mkdir -p "$OUTPUT_DIR" "$LOG_DIR"
 
@@ -414,6 +458,41 @@ if [ "$ENABLE_CAMERA" = "true" ] && \
   exit 1
 fi
 
+if [ "$ENABLE_GPS" = "true" ]; then
+  start_process gps_metadata roslaunch scout_pointcloud_accumulator mapping_gps_metadata.launch \
+    output_pcd:="$PCD_FILE" \
+    metadata_dir:="$GPS_METADATA_DIR" \
+    target_frame:="$TARGET_FRAME" \
+    robot_frame:="$GPS_ROBOT_FRAME" \
+    gps_frame:="$GPS_FRAME" \
+    gps_tcp_bind:="$GPS_TCP_BIND" \
+    gps_tcp_port:="$GPS_TCP_PORT" \
+    gps_allowed_hosts:="$GPS_ALLOWED_HOSTS" \
+    gps_min_sats:="$GPS_MIN_SATS" \
+    gps_max_hdop:="$GPS_MAX_HDOP" \
+    gps_max_age_ms:="$GPS_MAX_AGE_MS" \
+    gps_require_fix:="$GPS_REQUIRE_FIX" \
+    gps_require_sats:="$GPS_REQUIRE_SATS" \
+    gps_require_hdop:="$GPS_REQUIRE_HDOP" \
+    gps_require_age:="$GPS_REQUIRE_AGE" \
+    gps_association_max_age_sec:="$GPS_ASSOCIATION_MAX_AGE_SEC" \
+    gps_tf_wait_timeout_sec:="$GPS_TF_WAIT_TIMEOUT_SEC" \
+    gps_max_line_bytes:="$GPS_MAX_LINE_BYTES" \
+    datum_mode:="$GPS_DATUM_MODE" \
+    datum_latitude:="$GPS_DATUM_LATITUDE" \
+    datum_longitude:="$GPS_DATUM_LONGITUDE" \
+    datum_altitude:="$GPS_DATUM_ALTITUDE" \
+    trajectory_path_topic:="$GPS_TRAJECTORY_PATH_TOPIC" \
+    trajectory_max_points:="$GPS_TRAJECTORY_MAX_POINTS"
+
+  if ! wait_for_ros_node /mapping_gps_metadata_logger 10; then
+    echo "ERROR: GPS metadata sidecar did not stay alive after launch." >&2
+    echo "Check: $LOG_DIR/gps_metadata.log" >&2
+    tail -n 80 "$LOG_DIR/gps_metadata.log" 2>/dev/null || true
+    exit 1
+  fi
+fi
+
 if [ "$RVIZ" = "true" ] && ! wait_for_ros_node /rviz 10; then
   echo "ERROR: RViz did not stay alive. Check DISPLAY and $LOG_DIR/accumulator.log" >&2
   exit 1
@@ -444,6 +523,12 @@ Accumulated PCD outputs:
   ${PCD_FILE%.pcd}_fused_quality.pcd
   ${PCD_FILE%.pcd}_manifest.json
 
+GPS:
+  enabled=${ENABLE_GPS}
+  metadata_dir=${GPS_METADATA_DIR}
+  tcp=${GPS_TCP_BIND}:${GPS_TCP_PORT}
+  allowed_hosts=${GPS_ALLOWED_HOSTS:-none}
+
 Save at any time:
   $WORKSPACE/scripts/save_accumulated_map.sh
 
@@ -454,4 +539,5 @@ Watch logs:
   tail -f $LOG_DIR/realsense.log
   tail -f $LOG_DIR/lego_loam.log
   tail -f $LOG_DIR/accumulator.log
+  tail -f $LOG_DIR/gps_metadata.log
 EOF
