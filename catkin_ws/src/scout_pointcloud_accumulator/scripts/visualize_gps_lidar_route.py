@@ -10,6 +10,13 @@ import sys
 from pathlib import Path
 
 
+DOBACK_VALUE_FIELDS = [
+    "ax", "ay", "az", "gx", "gy", "gz", "roll", "pitch", "yaw",
+    "timeantwifi", "usciclo1", "usciclo2", "usciclo3", "usciclo4",
+    "usciclo5", "si", "accmag", "microsds", "k3",
+]
+
+
 def safe_float(value):
     if value in (None, "", "?"):
         return None
@@ -40,6 +47,11 @@ def read_route(path):
             alt = safe_float(row.get("altitude"))
             if x is None or y is None or lat is None or lon is None:
                 continue
+            doback = {}
+            for name in DOBACK_VALUE_FIELDS:
+                value = safe_float(row.get("doback_" + name))
+                if value is not None:
+                    doback[name] = value
             points.append({
                 "seq": row.get("sample_seq", ""),
                 "x": x,
@@ -52,6 +64,11 @@ def read_route(path):
                 "hdop": row.get("hdop", ""),
                 "age_ms": row.get("measurement_age_ms", ""),
                 "recv_time_utc": row.get("recv_time_utc", ""),
+                "doback_ok": truthy(row.get("doback_ok", "0")),
+                "doback_mode": row.get("doback_association_mode", ""),
+                "doback_count": row.get("doback_sample_count", ""),
+                "doback_age_sec": row.get("doback_association_age_sec", ""),
+                "doback": doback,
             })
     if not points:
         raise ValueError("No accepted tf_ok route rows found in {}".format(path))
@@ -158,14 +175,16 @@ def write_html(path, pcd_path, trajectory_path, points, route, stats):
         "trajectory": str(trajectory_path),
     }
     route_rows = "\n".join(
-        "<tr><td>{seq}</td><td>{lat:.8f}</td><td>{lon:.8f}</td><td>{x:.3f}</td><td>{y:.3f}</td><td>{hdop}</td><td>{sats}</td></tr>".format(
+        "<tr><td>{seq}</td><td>{lat:.8f}</td><td>{lon:.8f}</td><td>{x:.3f}</td><td>{y:.3f}</td><td>{si}</td><td>{roll}</td><td>{pitch}</td><td>{count}</td></tr>".format(
             seq=html.escape(str(row["seq"])),
             lat=row["lat"],
             lon=row["lon"],
             x=row["x"],
             y=row["y"],
-            hdop=html.escape(str(row["hdop"])),
-            sats=html.escape(str(row["sats"])),
+            si=html.escape(str(row["doback"].get("si", ""))),
+            roll=html.escape(str(row["doback"].get("roll", ""))),
+            pitch=html.escape(str(row["doback"].get("pitch", ""))),
+            count=html.escape(str(row["doback_count"])),
         )
         for row in route
     )
@@ -209,7 +228,7 @@ th:first-child, td:first-child { text-align: left; }
     <p class="small">PCD: __PCD__<br>Trajectory: __TRAJ__<br>Cloud points shown: __POINTS__ (stride __STRIDE__)</p>
     <div id="info">Click a route point.</div>
     <table>
-      <thead><tr><th>seq</th><th>lat</th><th>lon</th><th>map_x</th><th>map_y</th><th>hdop</th><th>sats</th></tr></thead>
+      <thead><tr><th>seq</th><th>lat</th><th>lon</th><th>map_x</th><th>map_y</th><th>SI</th><th>roll</th><th>pitch</th><th>n</th></tr></thead>
       <tbody>__ROWS__</tbody>
     </table>
   </aside>
@@ -263,11 +282,19 @@ function draw() {
 function setInfo(index) {
   selected = index;
   const p = data.route[index];
-  info.innerHTML = '<strong>GPS fix seq ' + (p.seq || index) + '</strong><br>' +
+  let details = '<strong>GPS fix seq ' + (p.seq || index) + '</strong><br>' +
     'lat/lon: ' + p.lat.toFixed(8) + ', ' + p.lon.toFixed(8) + '<br>' +
     'map: x=' + p.x.toFixed(3) + ' y=' + p.y.toFixed(3) + ' z=' + p.z.toFixed(3) + '<br>' +
     'hdop=' + (p.hdop || '') + ' sats=' + (p.sats || '') + ' age_ms=' + (p.age_ms || '') + '<br>' +
     'time=' + (p.recv_time_utc || '');
+  if (p.doback_ok) {
+    const values = Object.entries(p.doback).map(([key, value]) => key + '=' + Number(value).toFixed(3));
+    details += '<br><br><strong>Doback (' + p.doback_mode + ', n=' + p.doback_count +
+      ', age_s=' + (p.doback_age_sec || '') + ')</strong><br>' + values.join(' &nbsp; ');
+  } else {
+    details += '<br><br><strong>Doback:</strong> ' + (p.doback_mode || 'sin muestra asociada');
+  }
+  info.innerHTML = details;
   draw();
 }
 

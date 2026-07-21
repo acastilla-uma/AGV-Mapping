@@ -129,6 +129,60 @@ for bad_value in ("nan", "inf", "-1"):
         pass
     else:
         raise AssertionError("bad int accepted: " + bad_value)
+
+values = [float(index) for index in range(1, 20)]
+doback = mod.parse_doback_line("; ".join(str(value) for value in values) + "; ")
+assert doback is not None
+assert doback["ax"] == 1.0
+assert doback["si"] == 16.0
+assert doback["k3"] == 19.0
+assert mod.parse_doback_line("ax; ay; az; gx; gy; gz; roll; pitch; yaw; timeantwifi; usciclo1; usciclo2; usciclo3; usciclo4; usciclo5; si; accmag; microsds; k3") is None
+assert mod.parse_doback_line("12:34:56") is None
+
+buffer = mod.DobackSampleBuffer()
+for seq, stamp, offset in [(1, 100.1, 0.0), (2, 100.4, 2.0), (3, 100.8, 4.0)]:
+    sample = {"doback_seq": seq, "recv_ros_time": stamp, "estimated_measurement_ros_time": stamp}
+    sample.update({name: float(index) + offset for index, name in enumerate(mod.DOBACK_VALUE_FIELDS)})
+    buffer.add(sample)
+associated = buffer.associate(101.0, 2.0)
+assert associated["doback_ok"] == "1"
+assert associated["doback_association_mode"] == "window_mean"
+assert associated["doback_sample_count"] == 3
+assert math.isclose(associated["doback_ax"], 2.0)
+reused = buffer.associate(101.5, 2.0)
+assert reused["doback_association_mode"] == "latest"
+assert reused["doback_sample_count"] == 1
+assert reused["doback_ax"] == 4.0
+stale = buffer.associate(103.0, 2.0)
+assert stale["doback_ok"] == "0"
+assert stale["doback_association_mode"] == "stale"
+assert abs(abs(mod.circular_mean_deg([179.0, -179.0])) - 180.0) < 1e-6
+
+late_buffer = mod.DobackSampleBuffer()
+assert late_buffer.associate(100.5, 2.0)["doback_ok"] == "0"
+for seq, stamp in [(1, 100.2), (2, 100.8)]:
+    sample = {"doback_seq": seq, "recv_ros_time": 101.0, "estimated_measurement_ros_time": stamp}
+    sample.update({name: float(seq) for name in mod.DOBACK_VALUE_FIELDS})
+    late_buffer.add(sample)
+late = late_buffer.associate(101.0, 2.0)
+assert late["doback_sample_count"] == 1
+assert late["doback_ax"] == 2.0
+
+node = object.__new__(mod.GpsMetadataLogger)
+node.lock = __import__("threading").Lock()
+node.doback_seq = 0
+node.doback_buffer = mod.DobackSampleBuffer()
+node.doback_writer = None
+node.doback_csv = None
+row_a = mod.parse_doback_line("1;2;3;4;5;6;7;8;179;9;20000;20000;20000;20000;20000;0.8;1000;10;0.75;")
+row_b = mod.parse_doback_line("2;3;4;5;6;7;8;9;-179;10;20000;20000;20000;20000;20000;0.7;1001;11;0.75;")
+node.record_doback_batch([(row_a, 100.99), (row_b, 101.0)], "/dev/test", 101.0)
+assert len(node.doback_buffer.samples) == 2
+assert math.isclose(node.doback_buffer.samples[0]["estimated_measurement_ros_time"], 100.9)
+assert math.isclose(node.doback_buffer.samples[1]["estimated_measurement_ros_time"], 101.0)
+burst = node.doback_buffer.associate(101.0, 2.0)
+assert burst["doback_sample_count"] == 2
+assert abs(abs(burst["doback_yaw"]) - 180.0) < 1e-6
 PY
 
 python3 - "$PROBE" <<'PY'
@@ -208,6 +262,13 @@ assert params["gps_association_max_age_sec"] == "$(arg gps_association_max_age_s
 assert params["gps_tf_wait_timeout_sec"] == "$(arg gps_tf_wait_timeout_sec)"
 assert params["gps_max_line_bytes"] == "$(arg gps_max_line_bytes)"
 assert params["datum_mode"] == "$(arg datum_mode)"
+assert args["doback_enabled"] == "true"
+assert args["doback_port"] == "auto"
+assert args["doback_baud"] == "115200"
+assert params["doback_enabled"] == "$(arg doback_enabled)"
+assert params["doback_port"] == "$(arg doback_port)"
+assert params["doback_association_max_age_sec"] == "$(arg doback_association_max_age_sec)"
+assert params["doback_probe_timeout_sec"] == "$(arg doback_probe_timeout_sec)"
 PY
 
 grep -q 'rospy.get_param("~gps_tcp_bind", "127.0.0.1")' "$MODULE" || fail "node tcp bind default is not loopback-safe"

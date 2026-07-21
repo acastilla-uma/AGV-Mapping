@@ -167,6 +167,10 @@ grep -q 'SESSION_DIR="${SESSION_DIR:-$OUTPUT_DIR/$SESSION_NAME}"' \
   "$ROOT_DIR/catkin_ws/scripts/start_lidar_mapping.sh" || fail "session map directory default missing"
 grep -q 'GPS_METADATA_DIR="${GPS_METADATA_DIR:-$SESSION_DIR}"' \
   "$ROOT_DIR/catkin_ws/scripts/start_lidar_mapping.sh" || fail "GPS metadata is not stored in the session map directory"
+grep -q 'ENABLE_DOBACK="${ENABLE_DOBACK:-true}"' \
+  "$ROOT_DIR/catkin_ws/scripts/start_lidar_mapping.sh" || fail "Doback auto-start default missing"
+grep -q 'doback_port:="$DOBACK_PORT"' \
+  "$ROOT_DIR/catkin_ws/scripts/start_lidar_mapping.sh" || fail "Doback serial port is not passed to GPS metadata launch"
 grep -q 'DEFAULT_REALSENSE_FILTERS="decimation,spatial"' \
   "$ROOT_DIR/catkin_ws/scripts/start_lidar_mapping.sh" || fail "quality RealSense filter profile missing"
 grep -q 'CAMERA_OUTLIER_FILTER="${CAMERA_OUTLIER_FILTER:-$DEFAULT_CAMERA_OUTLIER_FILTER}"' \

@@ -119,6 +119,7 @@ La extrínseca de cámara se carga desde [`camera_lidar_calibration.yaml`](catki
 | `/camera/color/camera_info` | Intrínsecos de cámara. |
 | `/camera/depth/color/points` | Entrada alternativa `PointCloud2` de cámara. |
 | TCP `gps_tcp_port` | Muestras GPS reenviadas desde el PC operador; por defecto puerto `29500`. |
+| USB serie `doback_port` | Estabilidad Doback en texto separado por `;`; 115200 baud, 8N1. |
 
 ### Salidas
 
@@ -207,7 +208,7 @@ Por defecto el arranque integrado usa `ENABLE_GPS=true`, `GPS_TCP_BIND=0.0.0.0` 
 ENABLE_GPS=false ./scripts/start_lidar_mapping.sh
 ```
 
-Cada ejecución crea una carpeta de sesión `maps/map_YYYYMMDD_HHMMSS/`. Dentro quedan juntos los tres mapas PCD, el manifest del acumulador y los CSV/JSONL GPS. Variables útiles del arranque integrado: `SESSION_NAME`, `SESSION_DIR`, `ENABLE_GPS`, `GPS_METADATA_DIR`, `GPS_TCP_BIND`, `GPS_TCP_PORT`, `GPS_ALLOWED_HOSTS`, `GPS_MIN_SATS`, `GPS_MAX_HDOP`, `GPS_MAX_AGE_MS`, `GPS_REQUIRE_FIX`, `GPS_REQUIRE_SATS`, `GPS_REQUIRE_HDOP`, `GPS_REQUIRE_AGE`, `GPS_ASSOCIATION_MAX_AGE_SEC`, `GPS_TF_WAIT_TIMEOUT_SEC`, `GPS_MAX_LINE_BYTES`, `GPS_FRAME`, `GPS_ROBOT_FRAME`, `GPS_DATUM_LATITUDE`, `GPS_DATUM_LONGITUDE` y `GPS_DATUM_ALTITUDE`.
+Cada ejecución crea una carpeta de sesión `maps/map_YYYYMMDD_HHMMSS/`. Dentro quedan juntos los tres mapas PCD, el manifest del acumulador y los CSV/JSONL GPS+Doback. Variables útiles del arranque integrado: `SESSION_NAME`, `SESSION_DIR`, `ENABLE_GPS`, `GPS_METADATA_DIR`, `GPS_TCP_BIND`, `GPS_TCP_PORT`, `GPS_ALLOWED_HOSTS`, `GPS_MIN_SATS`, `GPS_MAX_HDOP`, `GPS_MAX_AGE_MS`, `GPS_REQUIRE_FIX`, `GPS_REQUIRE_SATS`, `GPS_REQUIRE_HDOP`, `GPS_REQUIRE_AGE`, `GPS_ASSOCIATION_MAX_AGE_SEC`, `GPS_TF_WAIT_TIMEOUT_SEC`, `GPS_MAX_LINE_BYTES`, `GPS_FRAME`, `GPS_ROBOT_FRAME`, `GPS_DATUM_LATITUDE`, `GPS_DATUM_LONGITUDE`, `GPS_DATUM_ALTITUDE`, `ENABLE_DOBACK`, `DOBACK_PORT`, `DOBACK_BAUD` y `DOBACK_ASSOCIATION_MAX_AGE_SEC`.
 
 En el PC operador, primero identifique el LilyGO y capture evidencia:
 
@@ -239,11 +240,54 @@ La carpeta de sesión en `maps/map_YYYYMMDD_HHMMSS/` contiene:
 | `gps.csv` | Todas las muestras normalizadas con motivo de rechazo si aplica. |
 | `gps_raw.jsonl` | Payload original más envelope de recepción. |
 | `trajectory_gps_map.csv` | Muestras aceptadas y su intento de asociación a TF `map → base_link` en el timestamp estimado de medida. |
+| `doback.csv` | Todas las filas numéricas Doback, con tiempos ROS de recepción y medida reconstruida. |
 | `manifest.json` | Umbrales, frames, contadores, datum policy y rutas GPS generadas. |
 | `map_YYYYMMDD_HHMMSS_lidar.pcd` | Mapa LiDAR. |
 | `map_YYYYMMDD_HHMMSS_camera.pcd` | Mapa cámara RGB-D aceptado por quality gates. |
 | `map_YYYYMMDD_HHMMSS_fused_quality.pcd` | Mapa fusionado quality. |
 | `map_YYYYMMDD_HHMMSS_manifest.json` | Manifest del snapshot PCD. |
+
+### Asociación GPS–Doback
+
+El mismo sidecar GPS abre el Doback por USB y añade sus valores a cada fila de
+`trajectory_gps_map.csv`. El puerto se autodetecta primero por
+`/dev/serial/by-id/*` y después por `/dev/ttyACM*`/`/dev/ttyUSB*`. En modo
+`auto`, un candidato sólo se acepta si emite una fila numérica válida de 19
+campos durante `DOBACK_PROBE_TIMEOUT_SEC`; si hay más de un dispositivo serie
+conviene aun así fijar el symlink estable:
+
+```bash
+GPS_ALLOWED_HOSTS=192.168.8.10 \
+DOBACK_PORT=/dev/serial/by-id/usb-1a86_USB_Serial-if00-port0 \
+./scripts/start_lidar_mapping.sh
+```
+
+El firmware calcula el IMU a intervalos de 20 ms, genera una fila Doback cada
+cinco ciclos (aprox. 10 Hz) y las envía en ráfagas por USB. El logger reconstruye
+el tiempo de medida de cada fila hacia atrás desde la recepción de la ráfaga,
+usando la suma de `usciclo1..5`, para que las diez filas no compartan falsamente
+el mismo instante. Para cada fix GPS aceptado, promedia todas las filas Doback nuevas desde el fix anterior
+(`doback_association_mode=window_mean`). Si el GPS fuese más rápido, reutiliza
+la última muestra Doback mientras no supere `DOBACK_ASSOCIATION_MAX_AGE_SEC` y
+marca el modo `latest`. `doback_sample_count`, `doback_association_age_sec` y
+`doback_ok` permiten auditar cada asociación; no se inventan valores cuando la
+muestra está ausente o caducada.
+
+Las 19 columnas del firmware se conservan con prefijo `doback_`: `ax`, `ay`,
+`az` (mg); `gx`, `gy`, `gz` (mdps); `roll`, `pitch`, `yaw` (grados);
+`timeantwifi`, `usciclo1..5` y `microsds` (microsegundos); `si` (índice lateral
+de estabilidad), `accmag` (mg) y `k3` (adimensional). El firmware también
+calcula estabilidad frontal `SIF`, pero su versión actual no la emite por USB.
+
+El visor HTML muestra SI, roll y pitch en la tabla y los 19 valores al pulsar
+cualquier punto de la trayectoria:
+
+```bash
+python3 catkin_ws/src/scout_pointcloud_accumulator/scripts/visualize_gps_lidar_route.py \
+  --trajectory maps/map_YYYYMMDD_HHMMSS/trajectory_gps_map.csv \
+  --pcd maps/map_YYYYMMDD_HHMMSS/map_YYYYMMDD_HHMMSS_lidar.pcd \
+  --output maps/map_YYYYMMDD_HHMMSS/trajectory_gps_doback.html
+```
 
 Para generar productos georreferenciados offline:
 

@@ -132,6 +132,13 @@ GPS_DATUM_LONGITUDE="${GPS_DATUM_LONGITUDE:-}"
 GPS_DATUM_ALTITUDE="${GPS_DATUM_ALTITUDE:-}"
 GPS_TRAJECTORY_PATH_TOPIC="${GPS_TRAJECTORY_PATH_TOPIC:-/gps_map_trajectory_path}"
 GPS_TRAJECTORY_MAX_POINTS="${GPS_TRAJECTORY_MAX_POINTS:-10000}"
+ENABLE_DOBACK="${ENABLE_DOBACK:-true}"
+DOBACK_PORT="${DOBACK_PORT:-auto}"
+DOBACK_BAUD="${DOBACK_BAUD:-115200}"
+DOBACK_ASSOCIATION_MAX_AGE_SEC="${DOBACK_ASSOCIATION_MAX_AGE_SEC:-2.0}"
+DOBACK_RECONNECT_SEC="${DOBACK_RECONNECT_SEC:-2.0}"
+DOBACK_PROBE_TIMEOUT_SEC="${DOBACK_PROBE_TIMEOUT_SEC:-5.0}"
+DOBACK_MAX_LINE_BYTES="${DOBACK_MAX_LINE_BYTES:-65536}"
 
 if [ -f "$CAMERA_CALIBRATION_FILE" ]; then
   eval "$(python "$CATKIN_WS_DIR/src/scout_pointcloud_accumulator/scripts/camera_lidar_calibration_env.py" "$CAMERA_CALIBRATION_FILE")"
@@ -183,6 +190,7 @@ mapping_validate_bool GPS_REQUIRE_FIX "$GPS_REQUIRE_FIX"
 mapping_validate_bool GPS_REQUIRE_SATS "$GPS_REQUIRE_SATS"
 mapping_validate_bool GPS_REQUIRE_HDOP "$GPS_REQUIRE_HDOP"
 mapping_validate_bool GPS_REQUIRE_AGE "$GPS_REQUIRE_AGE"
+mapping_validate_bool ENABLE_DOBACK "$ENABLE_DOBACK"
 mapping_validate_choice CAMERA_OUTLIER_FILTER "$CAMERA_OUTLIER_FILTER" none sor ror
 mapping_validate_number_min VOXEL_SIZE "$VOXEL_SIZE" 0 true
 mapping_validate_number_min LIDAR_VOXEL_SIZE "$LIDAR_VOXEL_SIZE" 0 true
@@ -217,6 +225,11 @@ mapping_validate_number_min GPS_ASSOCIATION_MAX_AGE_SEC "$GPS_ASSOCIATION_MAX_AG
 mapping_validate_number_min GPS_TF_WAIT_TIMEOUT_SEC "$GPS_TF_WAIT_TIMEOUT_SEC" 0 true
 mapping_validate_int_min GPS_MAX_LINE_BYTES "$GPS_MAX_LINE_BYTES" 1
 mapping_validate_int_min GPS_TRAJECTORY_MAX_POINTS "$GPS_TRAJECTORY_MAX_POINTS" 0
+mapping_validate_int_min DOBACK_BAUD "$DOBACK_BAUD" 1
+mapping_validate_number_min DOBACK_ASSOCIATION_MAX_AGE_SEC "$DOBACK_ASSOCIATION_MAX_AGE_SEC" 0 false
+mapping_validate_number_min DOBACK_RECONNECT_SEC "$DOBACK_RECONNECT_SEC" 0 false
+mapping_validate_number_min DOBACK_PROBE_TIMEOUT_SEC "$DOBACK_PROBE_TIMEOUT_SEC" 0 false
+mapping_validate_int_min DOBACK_MAX_LINE_BYTES "$DOBACK_MAX_LINE_BYTES" 128
 if [ "$ENABLE_GPS" = "true" ] && [ "$GPS_TCP_BIND" != "127.0.0.1" ] && \
    [ "$GPS_TCP_BIND" != "localhost" ] && [ "$GPS_TCP_BIND" != "::1" ] && \
    [ -z "$GPS_ALLOWED_HOSTS" ]; then
@@ -463,7 +476,14 @@ if [ "$ENABLE_GPS" = "true" ]; then
     datum_longitude:="$GPS_DATUM_LONGITUDE" \
     datum_altitude:="$GPS_DATUM_ALTITUDE" \
     trajectory_path_topic:="$GPS_TRAJECTORY_PATH_TOPIC" \
-    trajectory_max_points:="$GPS_TRAJECTORY_MAX_POINTS"
+    trajectory_max_points:="$GPS_TRAJECTORY_MAX_POINTS" \
+    doback_enabled:="$ENABLE_DOBACK" \
+    doback_port:="$DOBACK_PORT" \
+    doback_baud:="$DOBACK_BAUD" \
+    doback_association_max_age_sec:="$DOBACK_ASSOCIATION_MAX_AGE_SEC" \
+    doback_reconnect_sec:="$DOBACK_RECONNECT_SEC" \
+    doback_probe_timeout_sec:="$DOBACK_PROBE_TIMEOUT_SEC" \
+    doback_max_line_bytes:="$DOBACK_MAX_LINE_BYTES"
 
   if ! wait_for_ros_node /mapping_gps_metadata_logger 10; then
     echo "ERROR: GPS metadata sidecar did not stay alive after launch." >&2
@@ -506,6 +526,11 @@ GPS:
   metadata_dir=${GPS_METADATA_DIR}
   tcp=${GPS_TCP_BIND}:${GPS_TCP_PORT}
   allowed_hosts=${GPS_ALLOWED_HOSTS:-none}
+
+Doback:
+  enabled=${ENABLE_DOBACK}
+  serial=${DOBACK_PORT}@${DOBACK_BAUD}
+  association_max_age_sec=${DOBACK_ASSOCIATION_MAX_AGE_SEC}
 
 Save at any time:
   $WORKSPACE/scripts/save_accumulated_map.sh

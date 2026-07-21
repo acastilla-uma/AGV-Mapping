@@ -2,12 +2,14 @@
 from __future__ import print_function
 
 import csv
+import glob
 import json
 import math
 import os
 import socket
 import sys
 import threading
+import time
 from datetime import datetime
 
 rospy = None
@@ -78,6 +80,48 @@ TRAJECTORY_FIELDS = GPS_FIELDS + [
     "map_pitch",
     "map_yaw",
 ]
+
+DOBACK_VALUE_FIELDS = [
+    "ax",
+    "ay",
+    "az",
+    "gx",
+    "gy",
+    "gz",
+    "roll",
+    "pitch",
+    "yaw",
+    "timeantwifi",
+    "usciclo1",
+    "usciclo2",
+    "usciclo3",
+    "usciclo4",
+    "usciclo5",
+    "si",
+    "accmag",
+    "microsds",
+    "k3",
+]
+
+DOBACK_FIELDS = [
+    "doback_seq",
+    "recv_ros_time",
+    "estimated_measurement_ros_time",
+    "batch_recv_ros_time",
+    "recv_time_utc",
+    "serial_port",
+] + DOBACK_VALUE_FIELDS + ["raw_text"]
+
+DOBACK_ASSOCIATION_FIELDS = [
+    "doback_ok",
+    "doback_association_mode",
+    "doback_sample_count",
+    "doback_first_measurement_ros_time",
+    "doback_last_measurement_ros_time",
+    "doback_association_age_sec",
+] + ["doback_{}".format(name) for name in DOBACK_VALUE_FIELDS]
+
+TRAJECTORY_FIELDS += DOBACK_ASSOCIATION_FIELDS
 
 
 def utc_now():
@@ -176,6 +220,144 @@ def bool_param(value, default=False):
     if parsed is None:
         return default
     return parsed
+
+
+def parse_doback_line(line):
+    """Parse one firmware data row; non-data/status lines return None."""
+    text = to_text(line).strip()
+    if ";" not in text:
+        return None
+    values = [part.strip() for part in text.split(";")]
+    while values and values[-1] == "":
+        values.pop()
+    if len(values) != len(DOBACK_VALUE_FIELDS):
+        return None
+    parsed = {}
+    for name, value in zip(DOBACK_VALUE_FIELDS, values):
+        number = safe_float(value)
+        if number is None:
+            return None
+        parsed[name] = number
+    parsed["raw_text"] = text
+    return parsed
+
+
+def find_doback_ports():
+    ports = []
+    devices = set()
+    for pattern in ("/dev/serial/by-id/*", "/dev/ttyACM*", "/dev/ttyUSB*"):
+        for path in sorted(glob.glob(pattern)):
+            device = os.path.realpath(path)
+            if device not in devices:
+                devices.add(device)
+                ports.append(path)
+    return ports
+
+
+def doback_row_duration_sec(sample):
+    duration = sum(sample[name] for name in ("usciclo1", "usciclo2", "usciclo3", "usciclo4", "usciclo5")) / 1000000.0
+    if duration <= 0.0 or duration > 5.0:
+        return 0.1
+    return duration
+
+
+def circular_mean_deg(values):
+    radians = [math.radians(value) for value in values]
+    sine = sum(math.sin(value) for value in radians) / float(len(radians))
+    cosine = sum(math.cos(value) for value in radians) / float(len(radians))
+    return math.degrees(math.atan2(sine, cosine))
+
+
+def validate_csv_header(path, fieldnames):
+    if not os.path.isfile(path) or os.path.getsize(path) == 0:
+        return
+    with open(path, "r") as handle:
+        reader = csv.reader(handle)
+        existing = next(reader, [])
+    if existing != list(fieldnames):
+        raise RuntimeError("CSV schema mismatch in {}; use a new SESSION_DIR".format(path))
+
+
+def empty_doback_association(mode="missing"):
+    row = dict((field, "") for field in DOBACK_ASSOCIATION_FIELDS)
+    row.update({
+        "doback_ok": "0",
+        "doback_association_mode": mode,
+        "doback_sample_count": 0,
+    })
+    return row
+
+
+class DobackSampleBuffer(object):
+    """Associate received Doback samples with GPS receive-time windows."""
+
+    def __init__(self, max_samples=10000):
+        self.max_samples = max_samples
+        self.samples = []
+        self.latest = None
+        self.last_consumed_seq = 0
+        self.last_association_time = None
+        self.lock = threading.Lock()
+
+    def add(self, sample):
+        with self.lock:
+            item = dict(sample)
+            self.samples.append(item)
+            self.latest = item
+            if self.max_samples > 0 and len(self.samples) > self.max_samples:
+                self.samples = self.samples[-self.max_samples:]
+
+    def associate(self, gps_recv_ros_time, max_age_sec):
+        current = float(gps_recv_ros_time)
+        cutoff = current - float(max_age_sec)
+        with self.lock:
+            previous_association_time = self.last_association_time
+            self.last_association_time = current
+            received = [
+                sample for sample in self.samples
+                if sample["doback_seq"] > self.last_consumed_seq
+                and sample["estimated_measurement_ros_time"] <= current
+            ]
+            if received:
+                self.last_consumed_seq = max(sample["doback_seq"] for sample in received)
+            selected = [
+                sample for sample in received
+                if sample["estimated_measurement_ros_time"] >= cutoff
+                and (previous_association_time is None or sample["estimated_measurement_ros_time"] > previous_association_time)
+            ]
+            latest = dict(self.latest) if self.latest is not None else None
+
+        if selected:
+            mode = "window_mean" if len(selected) > 1 else "window_sample"
+            result = {
+                "doback_ok": "1",
+                "doback_association_mode": mode,
+                "doback_sample_count": len(selected),
+                "doback_first_measurement_ros_time": selected[0]["estimated_measurement_ros_time"],
+                "doback_last_measurement_ros_time": selected[-1]["estimated_measurement_ros_time"],
+                "doback_association_age_sec": current - selected[-1]["estimated_measurement_ros_time"],
+            }
+            for name in DOBACK_VALUE_FIELDS:
+                values = [sample[name] for sample in selected]
+                result["doback_{}".format(name)] = circular_mean_deg(values) if name == "yaw" else sum(values) / float(len(values))
+            return result
+
+        if latest is None or latest["estimated_measurement_ros_time"] > current:
+            return empty_doback_association("missing")
+        age_sec = current - latest["estimated_measurement_ros_time"]
+        if age_sec > float(max_age_sec):
+            return empty_doback_association("stale")
+        result = {
+            "doback_ok": "1",
+            "doback_association_mode": "latest",
+            "doback_sample_count": 1,
+            "doback_first_measurement_ros_time": latest["estimated_measurement_ros_time"],
+            "doback_last_measurement_ros_time": latest["estimated_measurement_ros_time"],
+            "doback_association_age_sec": age_sec,
+        }
+        for name in DOBACK_VALUE_FIELDS:
+            result["doback_{}".format(name)] = latest[name]
+        return result
 
 
 def parse_key_value_status(text):
@@ -424,20 +606,44 @@ class GpsMetadataLogger(object):
         self.max_line_bytes = require_int(rospy.get_param("~gps_max_line_bytes", 8192), "~gps_max_line_bytes", 1)
         self.path_topic = rospy.get_param("~trajectory_path_topic", "/gps_map_trajectory_path")
         self.path_max_poses = require_int(rospy.get_param("~trajectory_max_points", 10000), "~trajectory_max_points", 0)
+        self.doback_enabled = bool_param(rospy.get_param("~doback_enabled", True), True)
+        self.doback_port = to_text(rospy.get_param("~doback_port", "auto")).strip() or "auto"
+        self.doback_baud = require_int(rospy.get_param("~doback_baud", 115200), "~doback_baud", 1)
+        self.doback_association_max_age_sec = require_float(
+            rospy.get_param("~doback_association_max_age_sec", 2.0), "~doback_association_max_age_sec", 0.0
+        )
+        self.doback_reconnect_sec = require_float(
+            rospy.get_param("~doback_reconnect_sec", 2.0), "~doback_reconnect_sec", 0.1
+        )
+        self.doback_probe_timeout_sec = require_float(
+            rospy.get_param("~doback_probe_timeout_sec", 5.0), "~doback_probe_timeout_sec", 0.5
+        )
+        self.doback_max_line_bytes = require_int(
+            rospy.get_param("~doback_max_line_bytes", 65536), "~doback_max_line_bytes", 128
+        )
         self.datum_mode = rospy.get_param("~datum_mode", "first_valid_fix")
         self.datum_latitude = self.optional_float_param("~datum_latitude")
         self.datum_longitude = self.optional_float_param("~datum_longitude")
         self.datum_altitude = self.optional_float_param("~datum_altitude")
 
         self.lock = threading.Lock()
+        self.gps_record_lock = threading.Lock()
         self.shutdown_event = threading.Event()
         self.server_socket = None
+        self.doback_serial = None
+        self.doback_serial_thread = None
         self.client_sockets = set()
         self.client_threads = []
         self.sample_seq = 0
         self.accepted_count = 0
         self.rejected_count = 0
         self.parse_error_count = 0
+        self.doback_seq = 0
+        self.doback_line_count = 0
+        self.doback_ignored_line_count = 0
+        self.doback_reconnect_count = 0
+        self.doback_active_port = ""
+        self.doback_buffer = DobackSampleBuffer()
         self.path_poses = []
         policy_error = tcp_policy_error(self.tcp_bind, self.allowed_hosts)
         if policy_error:
@@ -448,8 +654,11 @@ class GpsMetadataLogger(object):
         self.gps_csv_path = os.path.join(self.session_dir, "gps.csv")
         self.gps_raw_path = os.path.join(self.session_dir, "gps_raw.jsonl")
         self.trajectory_path = os.path.join(self.session_dir, "trajectory_gps_map.csv")
+        self.doback_csv_path = os.path.join(self.session_dir, "doback.csv")
         self.manifest_path = os.path.join(self.session_dir, "manifest.json")
         self.ensure_parent(self.gps_csv_path)
+        validate_csv_header(self.gps_csv_path, GPS_FIELDS)
+        validate_csv_header(self.trajectory_path, TRAJECTORY_FIELDS)
         self.gps_csv = open(self.gps_csv_path, "a")
         self.gps_writer = csv.DictWriter(self.gps_csv, fieldnames=GPS_FIELDS)
         if os.path.getsize(self.gps_csv_path) == 0:
@@ -459,6 +668,14 @@ class GpsMetadataLogger(object):
         if os.path.getsize(self.trajectory_path) == 0:
             self.trajectory_writer.writeheader()
         self.gps_raw = open(self.gps_raw_path, "a")
+        self.doback_csv = None
+        self.doback_writer = None
+        if self.doback_enabled:
+            validate_csv_header(self.doback_csv_path, DOBACK_FIELDS)
+            self.doback_csv = open(self.doback_csv_path, "a")
+            self.doback_writer = csv.DictWriter(self.doback_csv, fieldnames=DOBACK_FIELDS)
+            if os.path.getsize(self.doback_csv_path) == 0:
+                self.doback_writer.writeheader()
 
         self.fix_pub = rospy.Publisher("/gps/fix", NavSatFix, queue_size=10)
         self.path_pub = rospy.Publisher(self.path_topic, RosPath, queue_size=1, latch=True)
@@ -468,6 +685,11 @@ class GpsMetadataLogger(object):
         self.server_thread.daemon = True
         self.server_thread.start()
         rospy.loginfo("GPS metadata sidecar listening on %s:%d", self.tcp_bind, self.tcp_port)
+        if self.doback_enabled:
+            self.doback_serial_thread = threading.Thread(target=self.doback_serial_loop)
+            self.doback_serial_thread.daemon = True
+            self.doback_serial_thread.start()
+            rospy.loginfo("Doback serial integration enabled: port=%s baud=%d", self.doback_port, self.doback_baud)
 
     @staticmethod
     def parse_hosts(value):
@@ -495,6 +717,147 @@ class GpsMetadataLogger(object):
         if not os.path.isdir(path):
             os.makedirs(path)
         return path
+
+    def requested_doback_ports(self):
+        if self.doback_port.lower() != "auto":
+            return [self.doback_port]
+        return find_doback_ports()
+
+    def doback_serial_loop(self):
+        try:
+            import serial
+        except ImportError as exc:
+            rospy.logerr("Doback serial integration needs pyserial/python-serial: %s", exc)
+            return
+
+        while not rospy.is_shutdown() and not self.shutdown_event.is_set():
+            ports = self.requested_doback_ports()
+            if not ports:
+                rospy.logwarn_throttle(15.0, "Doback enabled but no /dev/serial/by-id, ttyACM or ttyUSB port is available")
+                self.shutdown_event.wait(self.doback_reconnect_sec)
+                continue
+
+            validated_any = False
+            for port in ports:
+                if self.shutdown_event.is_set() or rospy.is_shutdown():
+                    break
+                try:
+                    device = serial.Serial(port=port, baudrate=self.doback_baud, timeout=1.0)
+                except Exception as exc:
+                    rospy.logwarn_throttle(15.0, "Cannot open Doback serial port %s: %s", port, exc)
+                    continue
+
+                with self.lock:
+                    self.doback_serial = device
+                auto_probe = self.doback_port.lower() == "auto"
+                probe_deadline = time.time() + self.doback_probe_timeout_sec
+                validated = False
+                pending = []
+                try:
+                    while not rospy.is_shutdown() and not self.shutdown_event.is_set():
+                        raw = device.readline(self.doback_max_line_bytes + 1)
+                        if not raw:
+                            if auto_probe and not validated and time.time() >= probe_deadline:
+                                break
+                            if not auto_probe and not validated:
+                                rospy.logwarn_throttle(15.0, "Doback port %s is open but has not emitted a valid 19-field row", port)
+                            continue
+                        if len(raw) > self.doback_max_line_bytes:
+                            with self.lock:
+                                self.doback_ignored_line_count += 1
+                            rospy.logwarn_throttle(10.0, "Oversized Doback serial line dropped")
+                            continue
+                        text = raw.decode("utf-8", "replace") if isinstance(raw, bytes) else raw
+                        recv_ros_sec = rospy.Time.now().to_sec()
+                        parsed = parse_doback_line(text)
+                        with self.lock:
+                            self.doback_line_count += 1
+                            if parsed is None:
+                                self.doback_ignored_line_count += 1
+                        if parsed is not None:
+                            pending.append((parsed, recv_ros_sec))
+                            if not validated:
+                                validated = True
+                                validated_any = True
+                                with self.lock:
+                                    self.doback_active_port = port
+                                    self.doback_reconnect_count += 1
+                                rospy.loginfo("Doback serial validated: %s at %d baud", port, self.doback_baud)
+                            if len(pending) >= 10:
+                                self.record_doback_batch(pending, port, recv_ros_sec)
+                                pending = []
+                        elif pending:
+                            self.record_doback_batch(pending, port, pending[-1][1])
+                            pending = []
+                        if auto_probe and not validated and time.time() >= probe_deadline:
+                            break
+                except Exception as exc:
+                    if not self.shutdown_event.is_set() and not rospy.is_shutdown():
+                        rospy.logwarn("Doback serial port %s disconnected: %s", port, exc)
+                finally:
+                    if pending and validated:
+                        self.record_doback_batch(pending, port, pending[-1][1])
+                    try:
+                        device.close()
+                    except Exception:
+                        pass
+                    with self.lock:
+                        if self.doback_serial is device:
+                            self.doback_serial = None
+                            self.doback_active_port = ""
+                if validated:
+                    break
+                rospy.logwarn_throttle(
+                    15.0,
+                    "Serial candidate %s did not emit a valid Doback row within %.1f s",
+                    port,
+                    self.doback_probe_timeout_sec,
+                )
+
+            if not validated_any:
+                rospy.logwarn_throttle(15.0, "No serial candidate emitted valid Doback data: %s", ", ".join(ports))
+            self.shutdown_event.wait(self.doback_reconnect_sec)
+
+    def record_doback_line(self, line, port):
+        parsed = parse_doback_line(line)
+        with self.lock:
+            self.doback_line_count += 1
+            if parsed is None:
+                self.doback_ignored_line_count += 1
+                return False
+        recv_ros_sec = rospy.Time.now().to_sec()
+        self.record_doback_batch([(parsed, recv_ros_sec)], port, recv_ros_sec)
+        return True
+
+    def record_doback_batch(self, pending, port, batch_recv_ros_time):
+        measurement_times = [0.0] * len(pending)
+        measurement_time = float(batch_recv_ros_time)
+        for index in range(len(pending) - 1, -1, -1):
+            measurement_times[index] = measurement_time
+            measurement_time -= doback_row_duration_sec(pending[index][0])
+
+        samples = []
+        for index, (parsed, recv_ros_sec) in enumerate(pending):
+            with self.lock:
+                self.doback_seq += 1
+                doback_seq = self.doback_seq
+            sample = {
+                "doback_seq": doback_seq,
+                "recv_ros_time": recv_ros_sec,
+                "estimated_measurement_ros_time": measurement_times[index],
+                "batch_recv_ros_time": batch_recv_ros_time,
+                "recv_time_utc": utc_now(),
+                "serial_port": port,
+            }
+            sample.update(parsed)
+            samples.append(sample)
+            self.doback_buffer.add(sample)
+
+        with self.lock:
+            if self.doback_writer is not None:
+                for sample in samples:
+                    self.doback_writer.writerow(csv_row(sample))
+                self.doback_csv.flush()
 
     def tcp_server(self):
         server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -573,6 +936,10 @@ class GpsMetadataLogger(object):
             rospy.loginfo("GPS TCP client %s disconnected", host)
 
     def record_line(self, line, remote_host):
+        with self.gps_record_lock:
+            self._record_line_serialized(line, remote_host)
+
+    def _record_line_serialized(self, line, remote_host):
         recv_ros_time = rospy.Time.now()
         recv_ros_sec = recv_ros_time.to_sec()
         recv_time_utc = utc_now()
@@ -678,6 +1045,10 @@ class GpsMetadataLogger(object):
             "map_pitch": "",
             "map_yaw": "",
         })
+        if self.doback_enabled:
+            trajectory_row.update(self.doback_buffer.associate(stamp.to_sec(), self.doback_association_max_age_sec))
+        else:
+            trajectory_row.update(empty_doback_association("disabled"))
         association_ok, association_reason, association_age_sec, measurement_ros_sec = association_status(
             stamp.to_sec(), row.get("estimated_measurement_ros_time"), self.association_max_age_sec
         )
@@ -736,7 +1107,7 @@ class GpsMetadataLogger(object):
 
     def build_manifest(self):
         return {
-            "schema": "agv_mapping_gps_metadata_v1",
+            "schema": "agv_mapping_gps_doback_metadata_v2",
             "time_utc": utc_now(),
             "output_pcd": self.output_pcd,
             "metadata_dir": self.session_dir,
@@ -770,16 +1141,36 @@ class GpsMetadataLogger(object):
                 "tf_wait_timeout_sec": self.tf_wait_timeout_sec,
                 "rejection_field": "association_rejection_reason",
             },
+            "doback": {
+                "enabled": self.doback_enabled,
+                "configured_port": self.doback_port,
+                "active_port": self.doback_active_port,
+                "baud": self.doback_baud,
+                "association_clock": "estimated_doback_measurement_ros_time_to_gps_recv_ros_time",
+                "batch_time_reconstruction": "anchor_last_row_at_batch_receive_and_backdate_with_usciclo1_to_usciclo5",
+                "association_max_age_sec": self.doback_association_max_age_sec,
+                "faster_source_policy": "mean_new_samples_since_previous_accepted_gps_fix",
+                "slower_source_policy": "reuse_latest_within_max_age",
+                "value_fields": list(DOBACK_VALUE_FIELDS),
+                "max_line_bytes": self.doback_max_line_bytes,
+                "reconnect_sec": self.doback_reconnect_sec,
+                "probe_timeout_sec": self.doback_probe_timeout_sec,
+            },
             "counts": {
                 "samples": self.sample_seq,
                 "accepted": self.accepted_count,
                 "rejected": self.rejected_count,
                 "parse_errors": self.parse_error_count,
+                "doback_lines": self.doback_line_count,
+                "doback_samples": self.doback_seq,
+                "doback_ignored_lines": self.doback_ignored_line_count,
+                "doback_connections": self.doback_reconnect_count,
             },
             "files": {
                 "gps_csv": self.gps_csv_path,
                 "gps_raw_jsonl": self.gps_raw_path,
                 "trajectory_gps_map_csv": self.trajectory_path,
+                "doback_csv": self.doback_csv_path if self.doback_enabled else "",
                 "manifest_json": self.manifest_path,
             },
         }
@@ -804,7 +1195,10 @@ class GpsMetadataLogger(object):
         self.shutdown_event.set()
         if self.server_socket is not None:
             self.close_socket(self.server_socket)
+        if self.doback_serial is not None:
+            self.close_socket(self.doback_serial)
         with self.lock:
+            self.doback_writer = None
             sockets = list(self.client_sockets)
             threads = list(self.client_threads)
         for sock in sockets:
@@ -812,6 +1206,8 @@ class GpsMetadataLogger(object):
         current = threading.current_thread()
         if self.server_thread is not current:
             self.server_thread.join(1.0)
+        if self.doback_serial_thread is not None and self.doback_serial_thread is not current:
+            self.doback_serial_thread.join(max(1.0, self.doback_reconnect_sec + 0.5))
         for thread in threads:
             if thread is not current:
                 thread.join(1.0)
@@ -820,6 +1216,8 @@ class GpsMetadataLogger(object):
             self.gps_csv.close()
             self.trajectory_csv.close()
             self.gps_raw.close()
+            if self.doback_csv is not None:
+                self.doback_csv.close()
 
 
 def selected_fix_stamp_sec(row, recv_ros_sec):
